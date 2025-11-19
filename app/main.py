@@ -3,6 +3,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 from app.db import Database
 from app.core.models.base import BaseModel
+from app.routers import user, category, place, favorite
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 db = Database(url=DATABASE_URL)
@@ -18,6 +19,11 @@ async def lifespan(_fastapi_app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+app.include_router(user.router)
+app.include_router(category.router)
+app.include_router(place.router)
+app.include_router(favorite.router)
 
 
 @app.get("/")
