@@ -1,23 +1,27 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from pydantic import BaseModel, EmailStr, ConfigDict
 
-
-class UserCreateSchema(BaseModel):
-    username: str = Field(max_length=50)
+# Базова схема
+class UserBaseSchema(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=6)
+    full_name: str | None = None
 
+# Схема для реєстрації (вхідні дані)
+class UserCreateSchema(UserBaseSchema):
+    password: str
 
-class UserResponseSchema(BaseModel):
+# Схема для логіну (вхідні дані)
+class UserLoginSchema(BaseModel):
+    email: EmailStr
+    password: str
+
+# Схема для відповіді (те, що бачить юзер після реєстрації)
+class UserResponseSchema(UserBaseSchema):
     id: int
-    username: str
-    email: EmailStr
+    is_active: bool
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
-
-class UserUpdateSchema(BaseModel):
-    username: Optional[str] = Field(default=None, max_length=50)
-    email: Optional[EmailStr] = None
-    password: Optional[str] = Field(default=None, min_length=6)
+# Схема для токена
+class TokenSchema(BaseModel):
+    access_token: str
+    token_type: str

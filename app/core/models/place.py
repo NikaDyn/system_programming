@@ -1,19 +1,21 @@
-from sqlalchemy import String, Boolean, Float, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from app.core.models.base import BaseModel
 
 
 class Place(BaseModel):
     __tablename__ = "places"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(100))
-    description: Mapped[str] = mapped_column(String(255))
-    address: Mapped[str] = mapped_column(String(200))
-    rating: Mapped[float] = mapped_column(Float, default=0)
-    is_popular: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_new: Mapped[bool] = mapped_column(Boolean, default=False)
-    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    address = Column(String)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    is_new = Column(Boolean, default=False)
+    is_popular = Column(Boolean, default=False)
+
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
 
     category = relationship("Category", back_populates="places")
-    favorites = relationship("Favorite", back_populates="place")
+    favorites = relationship("Favorite", back_populates="place", cascade="all, delete-orphan")

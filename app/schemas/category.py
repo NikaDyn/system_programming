@@ -1,18 +1,14 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
-
-class CategoryCreateSchema(BaseModel):
-    name: str = Field(max_length=50)
-
-
-class CategoryResponseSchema(BaseModel):
-    id: int
+class CategoryBaseSchema(BaseModel):
     name: str
+    description: Optional[str] = None
 
-    class Config:
-        orm_mode = True
+class CategoryCreateSchema(CategoryBaseSchema):
+    pass
 
+class CategoryResponseSchema(CategoryBaseSchema):
+    id: int
 
-class CategoryUpdateSchema(BaseModel):
-    name: Optional[str] = Field(default=None, max_length=50)
+    model_config = ConfigDict(from_attributes=True)

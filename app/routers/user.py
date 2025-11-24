@@ -1,64 +1,51 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.db import Database as db
+
+from app.db import get_db
 from app.core.models.user import User
-from app.schemas.user import UserCreateSchema, UserResponseSchema, UserUpdateSchema
+from app.schemas.user import UserCreateSchema, UserResponseSchema, UserLoginSchema, TokenSchema
+from app.core.security import get_password_hash, verify_password, create_access_token
+
+router = APIRouter()
 
 
-router = APIRouter(prefix="/users", tags=["Users"])
+@router.post("/register", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
+async def register_user(user_data: UserCreateSchema, db: AsyncSession = Depends(get_db)):
+    # 1. Перевіряємо, чи існує email
+    query = select(User).where(User.email == user_data.email)
+    result = await db.execute(query)
+    existing_user = result.scalar_one_or_none()
+
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # 2. Створюємо користувача
+    new_user = User(
+        email=user_data.email,
+        full_name=user_data.full_name,
+        hashed_password=get_password_hash(user_data.password),  # Хешуємо пароль
+        is_active=True,
+        is_superuser=False
+    )
+
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    return new_user
 
 
-async def get_session() -> AsyncSession:
-    async with db.session_maker() as session:
-        yield session
-
-
-@router.post("/", response_model=UserResponseSchema)
-async def create_user(data: UserCreateSchema, session: AsyncSession = Depends(get_session)):
-    user = User(**data.model_dump())
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-    return user
-
-
-@router.get("/", response_model=list[UserResponseSchema])
-async def get_users(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(User))
-    return result.scalars().all()
-
-
-@router.get("/{user_id}", response_model=UserResponseSchema)
-async def get_user(user_id: int, session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(User).where(User.id == user_id))
+@router.post("/login", response_model=TokenSchema)
+async def login_user(login_data: UserLoginSchema, db: AsyncSession = Depends(get_db)):
+    # 1. Шукаємо юзера
+    query = select(User).where(User.email == login_data.email)
+    result = await db.execute(query)
     user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
 
+    # 2. Перевіряємо пароль
+    if not user or not verify_password(login_data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
-@router.patch("/{user_id}", response_model=UserResponseSchema)
-async def update_user(user_id: int, data: UserUpdateSchema, session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    for key, value in data.model_dump(exclude_unset=True).items():
-        setattr(user, key, value)
-
-    await session.commit()
-    await session.refresh(user)
-    return user
-
-
-@router.delete("/{user_id}", status_code=204)
-async def delete_user(user_id: int, session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    await session.delete(user)
-    await session.commit()
+    # 3. Генеруємо токен
+    token = create_access_token({"sub": user.email})
+    return {"access_token": token, "token_type": "bearer"}
