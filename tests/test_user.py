@@ -16,14 +16,12 @@ async def test_register_user_success(client):
     data = response.json()
     assert data["email"] == payload["email"]
     assert "id" in data
-    # Пароль не повинен повертатися у відповіді!
     assert "password" not in data
     assert "hashed_password" not in data
 
 
 @pytest.mark.asyncio
 async def test_register_user_duplicate_email(client, user_factory):
-    # Створюємо юзера заздалегідь
     existing_user = await user_factory.create_async(email="duplicate@test.com")
 
     payload = {
@@ -39,7 +37,6 @@ async def test_register_user_duplicate_email(client, user_factory):
 
 @pytest.mark.asyncio
 async def test_login_user_success(client, user_factory):
-    # Створюємо юзера з відомим нам паролем
     password = "mypassword"
     hashed = get_password_hash(password)
     user = await user_factory.create_async(email="login@test.com", hashed_password=hashed)

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select  # Використовуємо стандартний select
-
+from sqlalchemy import select
 from app.db import get_db
 from app.schemas.category import CategoryCreateSchema, CategoryResponseSchema
 from app.core.models.category import Category
@@ -10,14 +9,12 @@ from app.core.security import get_current_admin_user
 router = APIRouter()
 
 
-# Шлях буде /categories/ (бо префікс заданий в main.py)
 @router.post("/", response_model=CategoryResponseSchema, status_code=status.HTTP_201_CREATED)
 async def create_category(
         category_data: CategoryCreateSchema,
         db: AsyncSession = Depends(get_db),
         current_user=Depends(get_current_admin_user)
 ):
-    # Перевірка на дублікат
     query = select(Category).where(Category.name == category_data.name)
     result = await db.execute(query)
     existing = result.scalar_one_or_none()
@@ -32,7 +29,6 @@ async def create_category(
     return new_category
 
 
-# Шлях буде /categories/
 @router.get("/", response_model=list[CategoryResponseSchema])
 async def get_categories(db: AsyncSession = Depends(get_db)):
     query = select(Category)
@@ -40,7 +36,6 @@ async def get_categories(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
-# Шлях буде /categories/{category_id} - ЦЬОГО НЕ ВИСТАЧАЛО
 @router.get("/{category_id}", response_model=CategoryResponseSchema)
 async def get_category(
         category_id: int,
@@ -52,7 +47,6 @@ async def get_category(
     return category
 
 
-# Шлях буде /categories/{category_id}
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
         category_id: int,

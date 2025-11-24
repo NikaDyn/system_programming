@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
 from app.db import get_db
 from app.core.models.user import User
 from app.schemas.user import UserCreateSchema, UserResponseSchema, UserLoginSchema, TokenSchema
@@ -12,7 +11,6 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserCreateSchema, db: AsyncSession = Depends(get_db)):
-    # 1. Перевіряємо, чи існує email
     query = select(User).where(User.email == user_data.email)
     result = await db.execute(query)
     existing_user = result.scalar_one_or_none()
@@ -20,11 +18,10 @@ async def register_user(user_data: UserCreateSchema, db: AsyncSession = Depends(
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # 2. Створюємо користувача
     new_user = User(
         email=user_data.email,
         full_name=user_data.full_name,
-        hashed_password=get_password_hash(user_data.password),  # Хешуємо пароль
+        hashed_password=get_password_hash(user_data.password),
         is_active=True,
         is_superuser=False
     )
@@ -37,15 +34,12 @@ async def register_user(user_data: UserCreateSchema, db: AsyncSession = Depends(
 
 @router.post("/login", response_model=TokenSchema)
 async def login_user(login_data: UserLoginSchema, db: AsyncSession = Depends(get_db)):
-    # 1. Шукаємо юзера
     query = select(User).where(User.email == login_data.email)
     result = await db.execute(query)
     user = result.scalar_one_or_none()
 
-    # 2. Перевіряємо пароль
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # 3. Генеруємо токен
     token = create_access_token({"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}

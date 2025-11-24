@@ -13,9 +13,11 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False
 )
 
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(BaseModel.metadata.create_all)
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:

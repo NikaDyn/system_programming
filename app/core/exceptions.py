@@ -1,7 +1,3 @@
-# ===========================
-# Кастомні виключення для API
-# ===========================
-
 class CategoryNotFound(Exception):
     def __init__(self, message: str):
         super().__init__(message)

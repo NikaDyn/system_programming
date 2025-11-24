@@ -5,6 +5,7 @@ from sqlalchemy import text
 from app.db import init_db, engine
 from app.routers import user, category, place, favorite
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
@@ -22,9 +23,11 @@ app.include_router(category.router, prefix="/categories", tags=["Categories"])
 app.include_router(place.router, prefix="/places", tags=["Places"])
 app.include_router(favorite.router, prefix="/favorites", tags=["Favorites"])
 
+
 @app.get("/", tags=["System"])
 def root():
     return {"message": "Welcome to the Location Explorer API"}
+
 
 @app.get("/health", tags=["System"])
 async def health():

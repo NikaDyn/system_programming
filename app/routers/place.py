@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
 from app.db import get_db
 from app.schemas.place import PlaceCreateSchema, PlaceResponseSchema
 from app.core.models.place import Place

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
+
 class PlaceBaseSchema(BaseModel):
     name: str
     description: Optional[str] = None
@@ -11,8 +12,10 @@ class PlaceBaseSchema(BaseModel):
     is_popular: bool = False
     category_id: int
 
+
 class PlaceCreateSchema(PlaceBaseSchema):
     pass
+
 
 class PlaceResponseSchema(PlaceBaseSchema):
     id: int

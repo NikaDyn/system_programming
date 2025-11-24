@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.models.base import BaseModel
 
+
 class Favorite(BaseModel):
     __tablename__ = "favorites"
 

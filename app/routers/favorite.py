@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-
 from app.db import get_db
 from app.schemas.favorite import FavoriteCreateSchema, FavoriteResponseSchema
 from app.core.models.favorite import Favorite
@@ -18,12 +17,10 @@ async def add_to_favorites(
         db: AsyncSession = Depends(get_db),
         current_user=Depends(get_current_user)
 ):
-    # Перевіряємо, чи існує місце
     place = await db.get(Place, fav_data.place_id)
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
-    # Перевіряємо, чи вже додано в обране
     query = select(Favorite).where(
         Favorite.user_id == current_user.id,
         Favorite.place_id == fav_data.place_id
@@ -32,13 +29,10 @@ async def add_to_favorites(
     if existing.scalar():
         raise HTTPException(status_code=400, detail="Already in favorites")
 
-    # Додаємо
     new_fav = Favorite(user_id=current_user.id, place_id=fav_data.place_id)
     db.add(new_fav)
     await db.commit()
 
-    # Завантажуємо дані про місце для відповіді
-    # (Це потрібно, бо схема очікує поле 'place')
     query_reload = select(Favorite).where(Favorite.id == new_fav.id).options(selectinload(Favorite.place))
     result = await db.execute(query_reload)
     return result.scalar_one()
@@ -49,7 +43,6 @@ async def get_favorites(
         db: AsyncSession = Depends(get_db),
         current_user=Depends(get_current_user)
 ):
-    # Завантажуємо улюблене разом із даними про місця
     query = select(Favorite).where(Favorite.user_id == current_user.id).options(selectinload(Favorite.place))
     result = await db.execute(query)
     return result.scalars().all()
