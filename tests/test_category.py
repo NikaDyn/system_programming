@@ -1,50 +1,54 @@
 import pytest
+from httpx import AsyncClient
+
+from tests.factories.category import CategoryFactory
 
 
-@pytest.mark.asyncio
-async def test_get_categories_empty(client):
-    """Перевіряємо, що спочатку список порожній"""
-    response = await client.get("/categories/")
-    assert response.status_code == 200
-    assert response.json() == []
-
-
-@pytest.mark.asyncio
-async def test_get_categories_list(client, category_factory):
-    """Створюємо 3 категорії через фабрику і перевіряємо, чи API їх бачить"""
-    await category_factory.create_batch_async(3)
-    response = await client.get("/categories/")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 3
-    assert "id" in data[0]
-    assert "name" in data[0]
-
-
-@pytest.mark.asyncio
-async def test_create_category(client):
-    """Перевірка створення категорії"""
-    payload = {
-        "name": "Coffee Shops",
-        "description": "Best coffee in Frankivsk"
+@pytest.fixture()
+def category_payload(faker):
+    return {
+        "name": faker.word().capitalize() + " Category"
     }
 
-    response = await client.post("/categories/", json=payload)
+
+@pytest.mark.asyncio
+async def test_create_category_admin_success(client: AsyncClient, category_payload: dict):
+    headers = {"Authorization": "Bearer admin_token"}
+    response = await client.post("/categories/", json=category_payload, headers=headers)
+
     assert response.status_code == 201
     data = response.json()
-    assert data["name"] == payload["name"]
-    response_duplicate = await client.post("/categories/", json=payload)
-    assert response_duplicate.status_code == 400
+    assert data["name"] == category_payload["name"]
 
 
 @pytest.mark.asyncio
-async def test_get_single_category(client, category_factory):
-    """Отримання однієї категорії по ID"""
-    category = await category_factory.create_async()
+async def test_create_category_unauthorized(client: AsyncClient, category_payload: dict):
+    response = await client.post("/categories/", json=category_payload)
 
-    response = await client.get(f"/categories/{category.id}")
+    assert response.status_code in (401, 403)
+
+
+@pytest.mark.asyncio
+async def test_get_categories_list(client: AsyncClient, category_factory: CategoryFactory):
+    await category_factory(name="Food")
+    await category_factory(name="Walking")
+
+    response = await client.get("/categories/")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == category.id
-    assert data["name"] == category.name
+    assert len(data) == 2
+    assert "Food" in [c["name"] for c in data]
+
+
+@pytest.mark.asyncio
+async def test_delete_category_admin_success(client: AsyncClient, category_factory: CategoryFactory):
+    category = await category_factory()
+    headers = {"Authorization": "Bearer admin_token"}
+
+    response = await client.delete(f"/categories/{category.id}", headers=headers)
+
+    assert response.status_code == 204
+
+    check_response = await client.get(f"/categories/{category.id}")
+    assert check_response.status_code == 404

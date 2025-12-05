@@ -2,12 +2,19 @@ import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from sqlalchemy import text
+from fastapi.security import OAuth2PasswordBearer
 from app.db import init_db, engine
-from app.routers import user, category, place, favorite
+
+from app.core.models import user as user_model
+from app.core.models import category, place, favorite
+
+from app.routers import user, category as category_router, place as place_router, favorite as favorite_router
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     await init_db()
     yield
     await engine.dispose()
@@ -19,9 +26,9 @@ app = FastAPI(
 )
 
 app.include_router(user.router, prefix="/users", tags=["Users"])
-app.include_router(category.router, prefix="/categories", tags=["Categories"])
-app.include_router(place.router, prefix="/places", tags=["Places"])
-app.include_router(favorite.router, prefix="/favorites", tags=["Favorites"])
+app.include_router(category_router.router, prefix="/categories", tags=["Categories"])
+app.include_router(place_router.router, prefix="/places", tags=["Places"])
+app.include_router(favorite_router.router, prefix="/favorites", tags=["Favorites"])
 
 
 @app.get("/", tags=["System"])

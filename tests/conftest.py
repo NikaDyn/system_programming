@@ -1,87 +1,90 @@
+import asyncio
 import pytest
-import pytest_asyncio
-from typing import AsyncGenerator, Any
-from asgi_lifespan import LifespanManager
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from app.core.models.base import BaseModel
-from app.main import app as global_app
+from httpx import AsyncClient
+from typing import AsyncGenerator
+from app.main import app
 from app.db import get_db
-from app.core.security import get_current_admin_user, get_current_user
-from tests.factories.category import CategoryFactory
-from tests.factories.place import PlaceFactory
-from tests.factories.user import UserFactory
+from app.core.security import get_current_user, get_current_admin_user
+from app.core.models.user import User
 
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+class MockAsyncSession:
+    def __init__(self):
+        self.mock_results = []
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def add(self, *args, **kwargs): pass
+
+    async def commit(self): pass
+
+    async def refresh(self, *args, **kwargs): pass
+
+    async def execute(self, *args, **kwargs): return self
+
+    def scalar_one(self): return None
+
+    def scalars(self): return self
+
+    def all(self): return self.mock_results
+
+    def first(self): return None
+
+    def delete(self, *args, **kwargs): pass
 
 
 @pytest.fixture(scope="session")
-async def db_engine():
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.create_all)
-    yield engine
-    await engine.dispose()
+def event_loop():
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
 
 
-@pytest.fixture(scope="function")
-async def db_session(db_engine):
-    async_session = async_sessionmaker(db_engine, expire_on_commit=False, class_=AsyncSession)
-    async with async_session() as session:
-        yield session
-        await session.rollback()
+@pytest.fixture(scope="session", autouse=True)
+def override_get_db_dependency():
+    app.dependency_overrides[get_db] = lambda: MockAsyncSession()
+    yield
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture(autouse=True)
-async def clear_db(db_session: AsyncSession):
-    for table in reversed(BaseModel.metadata.sorted_tables):
-        await db_session.execute(table.delete())
-    await db_session.commit()
+MOCK_ADMIN_USER = User(id=1, email="admin@test.com", hashed_password="hashed", is_superuser=True)
+MOCK_REGULAR_USER = User(id=2, email="user@test.com", hashed_password="hashed", is_superuser=False)
 
 
-@pytest.fixture
-async def category_factory(db_session):
-    CategoryFactory._meta.sqlalchemy_session = db_session
-    return CategoryFactory
+async def override_get_current_user_admin():
+    return MOCK_ADMIN_USER
 
 
-@pytest.fixture
-async def place_factory(db_session):
-    PlaceFactory._meta.sqlalchemy_session = db_session
-    return PlaceFactory
+async def override_get_current_user_regular():
+    return MOCK_REGULAR_USER
+
+
+async def override_get_current_admin_user():
+    return MOCK_ADMIN_USER
 
 
 @pytest.fixture
-async def user_factory(db_session):
-    UserFactory._meta.sqlalchemy_session = db_session
-    return UserFactory
+async def client() -> AsyncGenerator[AsyncClient, None]:
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
 
 
 @pytest.fixture
-def app():
-    return global_app
+async def admin_client(client) -> AsyncGenerator[AsyncClient, None]:
+    app.dependency_overrides[get_current_user] = override_get_current_user_admin
+    app.dependency_overrides[get_current_admin_user] = override_get_current_admin_user
+    yield client
+    del app.dependency_overrides[get_current_user]
+    del app.dependency_overrides[get_current_admin_user]
 
 
-class MockUser:
-    id = 1
-    email = "admin@test.com"
-    is_superuser = True
-    is_active = True
-
-
-@pytest_asyncio.fixture()
-async def client(db_session) -> AsyncGenerator[AsyncClient, Any]:
-    async def override_get_db():
-        async with db_session as session:
-            yield session
-
-    global_app.dependency_overrides[get_db] = override_get_db
-    global_app.dependency_overrides[get_current_admin_user] = lambda: MockUser()
-    global_app.dependency_overrides[get_current_user] = lambda: MockUser()
-
-    async with LifespanManager(global_app):
-        transport = ASGITransport(app=global_app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            yield client
-
-    global_app.dependency_overrides.clear()
+@pytest.fixture
+async def authorized_client(client) -> AsyncGenerator[AsyncClient, None]:
+    app.dependency_overrides[get_current_user] = override_get_current_user_regular
+    yield client
+    del app.dependency_overrides[get_current_user]

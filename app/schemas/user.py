@@ -1,25 +1,23 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional
 
 
-class UserBaseSchema(BaseModel):
+class UserBase(BaseModel):
     email: EmailStr
-    full_name: str | None = None
+    full_name: Optional[str] = None
 
 
-class UserCreateSchema(UserBaseSchema):
-    password: str
+class UserCreateSchema(UserBase):
+    password: str = Field(..., min_length=6)
 
 
-class UserLoginSchema(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class UserResponseSchema(UserBaseSchema):
+class UserResponseSchema(UserBase):
     id: int
     is_active: bool
+    is_superuser: bool
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 
 class TokenSchema(BaseModel):

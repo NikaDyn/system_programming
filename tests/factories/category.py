@@ -1,11 +1,12 @@
 import factory
+from factory import fuzzy
+from . import BaseFactory
 from app.core.models.category import Category
-from tests.factories.base import BaseFactory
 
 
 class CategoryFactory(BaseFactory):
     class Meta:
         model = Category
 
-    name = factory.Faker("word")
-    description = factory.Faker("sentence")
+    id = factory.Sequence(lambda n: n + 1)
+    name = fuzzy.FuzzyChoice(['Food', 'Entertainment', 'Walking', 'Historical', 'Art', 'Nature'])

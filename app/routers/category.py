@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db import get_db
-from app.schemas.category import CategoryCreateSchema, CategoryResponseSchema
+from app.core.models.user import User
+from app.core.security import get_current_user, get_current_admin_user
 from app.core.models.category import Category
-from app.core.security import get_current_admin_user
+from app.schemas.category import CategoryCreateSchema, CategoryResponseSchema
 
 router = APIRouter()
 
@@ -13,49 +14,26 @@ router = APIRouter()
 async def create_category(
         category_data: CategoryCreateSchema,
         db: AsyncSession = Depends(get_db),
-        current_user=Depends(get_current_admin_user)
+        # Якщо ви використовуєте токен адміністратора, залишайте get_current_admin_user
+        current_user: User = Depends(get_current_admin_user)
 ):
-    query = select(Category).where(Category.name == category_data.name)
-    result = await db.execute(query)
-    existing = result.scalar_one_or_none()
+    """Створення нової категорії. Дозволено лише для адміністраторів."""
 
-    if existing:
-        raise HTTPException(status_code=400, detail="Category already exists")
+    # 1. Перевіряємо, чи існує категорія з таким іменем (асинхронно)
+    # Використовуємо db.scalar для отримання одного результату або None
+    existing_category = await db.scalar(
+        select(Category).where(Category.name == category_data.name)
+    )
 
-    new_category = Category(name=category_data.name, description=category_data.description)
+    if existing_category:
+        raise HTTPException(status_code=400, detail="Category with this name already exists")
+
+    # 2. Створюємо новий об'єкт моделі з Pydantic-даних
+    new_category = Category(**category_data.model_dump())
+
+    # 3. Зберігаємо в БД
     db.add(new_category)
     await db.commit()
-    await db.refresh(new_category)
+    await db.refresh(new_category)  # Важливо для отримання ID
+
     return new_category
-
-
-@router.get("/", response_model=list[CategoryResponseSchema])
-async def get_categories(db: AsyncSession = Depends(get_db)):
-    query = select(Category)
-    result = await db.execute(query)
-    return result.scalars().all()
-
-
-@router.get("/{category_id}", response_model=CategoryResponseSchema)
-async def get_category(
-        category_id: int,
-        db: AsyncSession = Depends(get_db)
-):
-    category = await db.get(Category, category_id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return category
-
-
-@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_category(
-        category_id: int,
-        db: AsyncSession = Depends(get_db),
-        current_user=Depends(get_current_admin_user)
-):
-    category = await db.get(Category, category_id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    await db.delete(category)
-    await db.commit()
-    return None

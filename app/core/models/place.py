@@ -1,21 +1,32 @@
-from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey
+from app.db import db
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from app.core.models.base import BaseModel
 
 
-class Place(BaseModel):
+class Place(db):
     __tablename__ = "places"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, index=True, nullable=False)
     description = Column(String)
+
+    # !!! НОВЕ ПОЛЕ: Фізична адреса !!!
     address = Column(String)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    is_new = Column(Boolean, default=False)
+
+    # Географічні дані
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+
+    # Додаткові поля (залишаємо їх у моделі для гнучкості)
+    image_url = Column(String)
+    is_new = Column(Boolean, default=True)
     is_popular = Column(Boolean, default=False)
 
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+    # Зв'язок з Category (Багато-до-одного)
+    category_id = Column(Integer, ForeignKey("categories.id"))
 
+    # Зв'язок SQLAlchemy
     category = relationship("Category", back_populates="places")
-    favorites = relationship("Favorite", back_populates="place", cascade="all, delete-orphan")
+
+    # Зворотний зв'язок з 'Favorites'
+    favorites = relationship("Favorite", back_populates="place")
