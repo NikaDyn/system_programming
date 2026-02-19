@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Explorer - Мапа цікавих місць</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 500px; border-radius: 1rem; z-index: 10; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <!-- Шапка -->
+    <header class="bg-white border-b sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">📍</span>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    Location Explorer
+                </h1>
+            </div>
+            <!-- Секція авторизації -->
+            <div id="auth-section" class="flex items-center space-x-4">
+                <!-- Кнопки генеруються через JS -->
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="grid lg:grid-cols-3 gap-8">
+
+            <!-- Ліва колонка: Мапа та Списки -->
+            <div class="lg:col-span-2 space-y-8">
+                <div class="bg-white p-2 rounded-2xl shadow-sm border">
+                    <div id="map"></div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Всі локації</h2>
+                        <button onclick="fetchPlaces()" class="text-blue-600 text-sm hover:underline font-medium">Оновити</button>
+                    </div>
+                    <div id="places-grid" class="grid sm:grid-cols-2 gap-4">
+                        <p class="text-slate-400 col-span-2 text-center py-8">Завантаження...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Права колонка: Форми та Вибране -->
+            <div class="space-y-8">
+                <!-- Форма додавання -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                    <h2 class="text-lg font-bold mb-4 flex items-center">
+                        <span class="mr-2 text-blue-500">➕</span> Додати нове місце
+                    </h2>
+                    <form id="place-form" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Назва</label>
+                            <input type="text" id="name" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Назва локації" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Адреса</label>
+                            <input type="text" id="address" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Вулиця, місто">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Широта</label>
+                                <input type="number" step="any" id="lat" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Довгота</label>
+                                <input type="number" step="any" id="lng" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Категорія</label>
+                            <select id="category" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" required>
+                                <option value="">Завантаження...</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200 active:scale-95">
+                            Зберегти на мапі
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Список обраного -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                    <h2 class="text-lg font-bold mb-4 flex items-center">
+                        <span class="mr-2 text-yellow-500">⭐</span> Моє Обране
+                    </h2>
+                    <div id="favorites-container" class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
+                        <p class="text-slate-400 text-sm italic">Завантаження...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальне вікно Логіну -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm relative">
+            <button onclick="hideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700">✕</button>
+            <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Вхід в систему</h2>
+
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>
+                    <input type="text" id="login-email" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Пароль</label>
+                    <input type="password" id="login-password" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg mt-4">
+                    Увійти
+                </button>
+            </form>
+            <p id="login-error" class="text-red-500 text-sm text-center mt-3 hidden">Помилка входу. Перевірте дані.</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:8000";
+        let map, markers = [];
+
+        // Отримання токену з пам'яті браузера
+        function getToken() {
+            return localStorage.getItem('access_token');
+        }
+
+        // --- ЛОГІКА АВТОРИЗАЦІЇ ---
+        function updateAuthUI() {
+            const authSection = document.getElementById('auth-section');
+            const token = getToken();
+
+            if (token) {
+                authSection.innerHTML = `
+                    <span class="text-sm text-green-600 font-medium flex items-center hidden sm:flex">
+                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-[0_0_5px_rgba(34,197,94,0.5)]"></span>Авторизовано
+                    </span>
+                    <button onclick="logout()" class="text-sm font-semibold bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 px-4 py-2 rounded-lg transition">Вийти</button>
+                `;
+            } else {
+                authSection.innerHTML = `
+                    <span class="text-sm text-red-500 font-medium flex items-center hidden sm:flex">
+                        <span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span>Не авторизовано
+                    </span>
+                    <button onclick="showModal()" class="text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg transition shadow-md shadow-blue-200">Увійти</button>
+                `;
+            }
+        }
+
+        function showModal() { document.getElementById('login-modal').classList.remove('hidden'); }
+        function hideModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            // FastAPI OAuth2 очікує дані у форматі Form-URL-Encoded
+            const formData = new URLSearchParams();
+            formData.append('username', email);
+            formData.append('password', password);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    hideModal();
+                    updateAuthUI();
+                    fetchCategories(); // Перезавантажуємо захищені дані
+                    fetchFavorites();
+                } else {
+                    document.getElementById('login-error').classList.remove('hidden');
+                }
+            } catch (err) {
+                document.getElementById('login-error').innerText = "Помилка з'єднання з сервером";
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        };
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            updateAuthUI();
+            fetchFavorites(); // Очистить список обраного на екрані
+        }
+
+        // --- ЛОГІКА МАПИ ТА ДАНИХ ---
+        function initMap() {
+            map = L.map('map').setView([48.3794, 31.1656], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            map.on('click', function(e) {
+                // Leaflet дає координати з крапкою (наприклад 48.1234), що ідеально для API
+                document.getElementById('lat').value = e.latlng.lat.toFixed(6);
+                document.getElementById('lng').value = e.latlng.lng.toFixed(6);
+            });
+        }
+
+        async function fetchCategories() {
+            try {
+                // Додаємо токен, якщо категорії захищені
+                const headers = {};
+                if (getToken()) headers['Authorization'] = `Bearer ${getToken()}`;
+
+                const response = await fetch(`${API_BASE_URL}/categories/`, { headers });
+                const select = document.getElementById('category');
+
+                if (response.ok) {
+                    const categories = await response.json();
+                    if (categories.length > 0) {
+                        select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                    } else {
+                        select.innerHTML = '<option value="">Немає категорій</option>';
+                    }
+                } else {
+                    select.innerHTML = '<option value="">Потрібна авторизація</option>';
+                }
+            } catch (err) {
+                document.getElementById('category').innerHTML = '<option value="">Помилка завантаження</option>';
+            }
+        }
+
+        async function fetchPlaces() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/places/`);
+                if (!response.ok) throw new Error('Помилка');
+                const places = await response.json();
+
+                markers.forEach(m => map.removeLayer(m));
+                markers = [];
+                const grid = document.getElementById('places-grid');
+                grid.innerHTML = '';
+
+                if (places.length === 0) {
+                    grid.innerHTML = '<p class="text-slate-400 col-span-2 text-center py-8">Локацій поки немає</p>';
+                    return;
+                }
+
+                places.forEach(place => {
+                    const marker = L.marker([place.latitude, place.longitude])
+                        .addTo(map)
+                        .bindPopup(`<b>${place.name}</b><br>${place.address || ''}`);
+                    markers.push(marker);
+
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-4 rounded-xl border border-slate-100 hover:border-blue-300 transition group relative shadow-sm";
+                    card.innerHTML = `
+                        <h3 class="font-bold pr-8 text-slate-800">${place.name}</h3>
+                        <p class="text-xs text-slate-500 mb-3">${place.address || 'Адреса не вказана'}</p>
+                        <div class="flex space-x-2">
+                            <button onclick="addToFavorites(${place.id})" class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-md hover:bg-yellow-100 hover:text-yellow-700 transition">⭐ В обране</button>
+                            <button onclick="deletePlace(${place.id})" class="text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-600 px-3 py-1.5 rounded-md hover:bg-red-50 transition">Видалити</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (err) {
+                document.getElementById('places-grid').innerHTML = '<p class="text-red-400 col-span-2 text-center">Помилка завантаження даних API</p>';
+            }
+        }
+
+        async function fetchFavorites() {
+            const container = document.getElementById('favorites-container');
+            const token = getToken();
+            if (!token) {
+                container.innerHTML = '<p class="text-slate-400 text-sm italic">Увійдіть для перегляду...</p>';
+                return;
+            }
+            try {
+                const response = await fetch(`${API_BASE_URL}/favorites/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401) {
+                    container.innerHTML = '<p class="text-red-400 text-sm">Сесія застаріла. Увійдіть знову.</p>';
+                    logout();
+                    return;
+                }
+
+                const favs = await response.json();
+
+                if (favs.length === 0) {
+                    container.innerHTML = '<p class="text-slate-400 text-sm">Список порожній</p>';
+                    return;
+                }
+
+                // ОСЬ ТУТ ЗМІНЕНО: Виводимо f.place.name замість "Локація #ID"
+                container.innerHTML = favs.map(f => `
+                    <div class="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm transition hover:bg-white hover:shadow-sm">
+                        <span class="font-medium text-slate-700">${f.place ? f.place.name : 'Невідома локація #' + f.place_id}</span>
+                        <button onclick="removeFromFavorites(${f.place_id})" class="text-red-400 hover:text-red-600 p-1" title="Видалити з обраного">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Помилка завантаження обраного:", err);
+            }
+        }
+
+        // --- ДІЇ З ДАНИМИ ---
+        document.getElementById('place-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const token = getToken();
+            if (!token) {
+                alert("Будь ласка, увійдіть в систему, щоб додати місце.");
+                showModal();
+                return;
+            }
+
+            const data = {
+                name: document.getElementById('name').value,
+                address: document.getElementById('address').value,
+                latitude: parseFloat(document.getElementById('lat').value),
+                longitude: parseFloat(document.getElementById('lng').value),
+                category_id: parseInt(document.getElementById('category').value),
+                description: "Створено через веб-інтерфейс",
+                is_new: true,
+                is_popular: false
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/places/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    fetchPlaces();
+                    e.target.reset();
+                    alert("Місце успішно додано!");
+                } else {
+                    const err = await response.json();
+                    alert("Помилка: " + (err.detail || "Не вдалося зберегти."));
+                    if (response.status === 401) logout();
+                }
+            } catch (err) {
+                alert("Помилка мережі при спробі зберегти");
+            }
+        };
+
+        async function addToFavorites(id) {
+            const token = getToken();
+            if (!token) { showModal(); return; }
+            try {
+                const response = await fetch(`${API_BASE_URL}/favorites/${id}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) fetchFavorites();
+                else {
+                    const err = await response.json();
+                    alert(err.detail || "Не вдалося додати");
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function removeFromFavorites(id) {
+            const token = getToken();
+            try {
+                const response = await fetch(`${API_BASE_URL}/favorites/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) fetchFavorites();
+            } catch (err) { console.error(err); }
+        }
+
+        async function deletePlace(id) {
+            const token = getToken();
+            if (!token) { showModal(); return; }
+            if (!confirm("Видалити цю локацію для ВСІХ користувачів?")) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/places/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    fetchPlaces();
+                    fetchFavorites();
+                } else {
+                    alert("У вас немає прав для видалення або помилка сервера.");
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        window.onload = () => {
+            updateAuthUI();
+            initMap();
+            fetchCategories();
+            fetchPlaces();
+            fetchFavorites();
+        };
+    </script>
+</body>
+</html>

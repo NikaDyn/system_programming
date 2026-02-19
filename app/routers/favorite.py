@@ -2,34 +2,35 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+
 from app.db import get_db
-from app.schemas.favorite import FavoriteCreateSchema, FavoriteResponseSchema
+from app.schemas.favorite import FavoriteResponseSchema # FavoriteCreateSchema більше не потрібна
 from app.core.models.favorite import Favorite
 from app.core.models.place import Place
 from app.core.security import get_current_user
 
 router = APIRouter()
 
-
-@router.post("/", response_model=FavoriteResponseSchema, status_code=status.HTTP_201_CREATED)
+# ЗМІНЕНО: тепер ми очікуємо place_id прямо в URL (/{place_id})
+@router.post("/{place_id}", response_model=FavoriteResponseSchema, status_code=status.HTTP_201_CREATED)
 async def add_to_favorites(
-        fav_data: FavoriteCreateSchema,
+        place_id: int,  # ЗМІНЕНО: приймаємо параметр зі шляху
         db: AsyncSession = Depends(get_db),
         current_user=Depends(get_current_user)
 ):
-    place = await db.get(Place, fav_data.place_id)
+    place = await db.get(Place, place_id)
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
     query = select(Favorite).where(
         Favorite.user_id == current_user.id,
-        Favorite.place_id == fav_data.place_id
+        Favorite.place_id == place_id
     )
     existing = await db.execute(query)
     if existing.scalar():
         raise HTTPException(status_code=400, detail="Already in favorites")
 
-    new_fav = Favorite(user_id=current_user.id, place_id=fav_data.place_id)
+    new_fav = Favorite(user_id=current_user.id, place_id=place_id)
     db.add(new_fav)
     await db.commit()
 
