@@ -12,5 +12,4 @@ class Category(db):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Зворотний зв'язок: місця, що належать до цієї категорії
     places = relationship("Place", back_populates="category")

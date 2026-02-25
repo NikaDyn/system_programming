@@ -28,7 +28,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Налаштування CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,26 +36,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Підключення роутерів
 app.include_router(user.router, prefix="/users", tags=["Users"])
 app.include_router(category_router.router, prefix="/categories", tags=["Categories"])
 app.include_router(place_router.router, prefix="/places", tags=["Places"])
 app.include_router(favorite_router.router, prefix="/favorites", tags=["Favorites"])
 
-# --- РОЗУМНИЙ ПОШУК ФАЙЛУ ІНТЕРФЕЙСУ ---
-# Знаходимо абсолютний шлях до папки app, де лежить цей main.py
 BASE_DIR = Path(__file__).resolve().parent
-# Формуємо шлях до app/static/index.html
 INDEX_FILE_PATH = BASE_DIR / "static" / "index.html"
 
 
 @app.get("/", tags=["UI"])
 async def read_index():
-    """Повертає візуальний інтерфейс користувача"""
     if INDEX_FILE_PATH.exists():
         return FileResponse(INDEX_FILE_PATH)
 
-    # Якщо файл не знайдено, покажемо чітку помилку з інформацією, де саме ми його шукали
     return HTMLResponse(content=f"""
         <html>
             <body style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8fafc;">

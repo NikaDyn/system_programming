@@ -10,21 +10,16 @@ from app.db import get_db
 
 router = APIRouter()
 
-# === ВИПРАВЛЕНИЙ GET МЕТОД ===
 @router.get("/", response_model=List[CategoryResponseSchema])
 async def get_categories(db: AsyncSession = Depends(get_db)):
-    # Для асинхронної БД використовуємо select та await
     result = await db.execute(select(Category))
     categories = result.scalars().all()
     return categories
 
-# === ВАШ ІСНУЮЧИЙ POST МЕТОД (залишається без змін) ===
 @router.post("/", response_model=CategoryResponseSchema, status_code=status.HTTP_201_CREATED)
-async def create_category(
-    category_data: CategoryCreateSchema,
-    db: AsyncSession = Depends(get_db),
-    # Якщо ви використовуєте токен...
-    current_user: User = Depends(get_current_admin_user)
-):
-    # ... ваш код створення категорії ...
-    pass
+async def create_category(category_data: CategoryCreateSchema, db: AsyncSession = Depends(get_db)):
+    new_cat = Category(name=category_data.name)
+    db.add(new_cat)
+    await db.commit()
+    await db.refresh(new_cat)
+    return new_cat

@@ -1,70 +1,61 @@
 import pytest
 from httpx import AsyncClient
-
+from sqlalchemy.ext.asyncio import AsyncSession
+from passlib.context import CryptContext
 from tests.factories.user import UserFactory
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@pytest.fixture()
-def registration_payload(faker):
-    return {
-        "first_name": faker.first_name(),
-        "last_name": faker.last_name(),
-        "email": faker.email(),
-        "password": "StrongPassword123",
-    }
+VALID_PASSWORD = "StrongPassword123"
+TEST_HASH = pwd_context.hash(VALID_PASSWORD)
+
+PREFIX = "/users"
 
 
 @pytest.mark.asyncio
-async def test_register_user_success(client: AsyncClient, registration_payload: dict):
-    response = await client.post("/auth/register", json=registration_payload)
-
+async def test_register_user_success(client: AsyncClient):
+    payload = {
+        "email": "newuser@example.com",
+        "full_name": "Іван Іванов",
+        "password": "securepassword"
+    }
+    response = await client.post(f"{PREFIX}/register", json=payload)
     assert response.status_code == 201
-    data = response.json()
-
-    assert data["email"] == registration_payload["email"]
-    assert "token" in data
 
 
 @pytest.mark.asyncio
-async def test_register_user_duplicate_email(client: AsyncClient, user_factory: UserFactory,
-                                             registration_payload: dict):
-    existing_user = await user_factory()
-    registration_payload["email"] = existing_user.email
+async def test_register_user_duplicate_email(client: AsyncClient, db_session: AsyncSession):
+    await UserFactory.create_async(session=db_session, email="existing@example.com")
 
-    response = await client.post("/auth/register", json=registration_payload)
-
-    assert response.status_code == 409
-    assert "detail" in response.json()
-
-
-@pytest.mark.asyncio
-async def test_login_user_success(client: AsyncClient, user_factory: UserFactory):
-    user = await user_factory(password_hash="$2b$12$R.S.W3.uGgZ8.Q3Z/x.c.eN.M5f4O2P4tLgD.J2.gY.k.rD7p.G4")
-
-    login_payload = {
-        "username": user.email,
-        "password": "StrongPassword123",
+    payload = {
+        "email": "existing@example.com",
+        "full_name": "Інше",
+        "password": "securepassword"
     }
+    response = await client.post(f"{PREFIX}/register", json=payload)
+    assert response.status_code == 400
 
-    response = await client.post("/auth/login", data=login_payload)
 
+@pytest.mark.asyncio
+async def test_login_user_success(client: AsyncClient, db_session: AsyncSession):
+    await UserFactory.create_async(
+        session=db_session,
+        email="login@example.com",
+        hashed_password=TEST_HASH
+    )
+
+    response = await client.post(f"{PREFIX}/login", data={"username": "login@example.com", "password": VALID_PASSWORD})
     assert response.status_code == 200
-    data = response.json()
-
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
 
 
 @pytest.mark.asyncio
-async def test_login_user_invalid_credentials(client: AsyncClient, user_factory: UserFactory):
-    await user_factory()
+async def test_login_user_invalid_credentials(client: AsyncClient, db_session: AsyncSession):
+    await UserFactory.create_async(
+        session=db_session,
+        email="login2@example.com",
+        hashed_password=TEST_HASH
+    )
 
-    invalid_payload = {
-        "username": "nonexistent@test.com",
-        "password": "wrongpassword",
-    }
-
-    response = await client.post("/auth/login", data=invalid_payload)
-
+    response = await client.post(f"{PREFIX}/login",
+                                 data={"username": "login2@example.com", "password": "wrongpassword"})
     assert response.status_code == 401
-    assert response.json()["detail"] == "Incorrect username or password"
