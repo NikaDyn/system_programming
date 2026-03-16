@@ -1,8 +1,8 @@
 import factory
-from tests.factories.base import BaseFactory
-from tests.factories.place import PlaceFactory
-from tests.factories.user import UserFactory
+from .base import BaseFactory
 from app.core.models.favorite import Favorite
+from .place import PlaceFactory
+from .user import UserFactory
 
 class FavoriteFactory(BaseFactory):
     class Meta:
