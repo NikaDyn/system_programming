@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy import text
@@ -43,6 +44,9 @@ app.include_router(favorite_router.router, prefix="/favorites", tags=["Favorites
 
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_FILE_PATH = BASE_DIR / "static" / "index.html"
+
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+
 
 
 @app.get("/", tags=["UI"])

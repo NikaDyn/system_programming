@@ -3,422 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Location Explorer - Мапа та Обране</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>IF Explorer — Локації Івано-Франківська</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <style>
-        :root {
-            --color-bg: #f8fafc;
-            --color-surface: #ffffff;
-            --color-primary: #2563eb;
-            --radius-lg: 24px;
-        }
-        body { background-color: var(--color-bg); font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        #map { height: 500px; border-radius: var(--radius-lg); z-index: 10; border: 4px solid white; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1); }
-        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
-        .tab-active { color: #2563eb; border-bottom: 3px solid #2563eb; }
-
-        /* Анімація для повідомлень */
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
-        .toast { animation: slideIn 0.3s ease-out forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="antialiased text-slate-900">
+<body>
 
-    <div id="toast-container"></div>
+<div id="toast-container"></div>
 
-    <!-- Шапка -->
-    <nav class="sticky top-0 z-50 glass border-b border-slate-200/60 px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-            <div class="w-11 h-11 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+<!-- AUTH MODAL -->
+<div id="auth-modal" class="modal-overlay">
+    <div class="modal">
+        <button class="modal-close" id="modal-close-btn">✕</button>
+        <h2 class="modal-title" id="modal-title">З поверненням</h2>
+        <p class="modal-sub" id="modal-sub">Увійдіть у свій акаунт</p>
+        <form id="auth-form">
+            <div class="field">
+                <label>Email</label>
+                <input type="email" id="auth-email" placeholder="ваш@email.com" required>
             </div>
-            <div>
-                <h1 class="text-xl font-black tracking-tight leading-none">Location<span class="text-blue-600">Explorer</span></h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Твій гід містом</p>
+            <div class="field">
+                <label>Пароль</label>
+                <input type="password" id="auth-password" placeholder="••••••••" required>
             </div>
+            <!-- Завдання 1: CTA-кнопка з анімацією -->
+            <button type="submit" class="modal-submit cta-btn" id="modal-btn">Увійти</button>
+        </form>
+        <div class="modal-toggle">
+            <span id="toggle-text">Немає акаунту?</span>
+            <a id="toggle-link-btn"> Зареєструватися</a>
         </div>
+    </div>
+</div>
 
-        <div id="auth-section" class="flex items-center space-x-6">
-            <!-- Кнопки входу через JS -->
+<!-- HEADER -->
+<header>
+    <div class="logo">
+        <div class="logo-dot"></div>
+        IF Explorer
+    </div>
+    <!-- Завдання 2: Бургер-кнопка -->
+    <button class="burger-btn" id="burger-btn" aria-label="Відкрити меню">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="header-right" id="header-auth"></div>
+</header>
+
+<!-- Завдання 2: Повноекранне мобільне меню -->
+<nav class="mobile-menu" id="mobile-menu">
+    <button class="mobile-menu-close" id="mobile-menu-close">✕</button>
+    <ul class="mobile-nav-links">
+        <li><a href="#map" class="mobile-nav-link">🗺 Карта</a></li>
+        <li><a href="#filter-section" class="mobile-nav-link">📍 Локації</a></li>
+        <li><a href="#add-section" class="mobile-nav-link">+ Додати місце</a></li>
+    </ul>
+    <div class="mobile-menu-footer">
+        <button class="cta-btn mobile-login-btn" id="mobile-login-btn">Увійти</button>
+    </div>
+</nav>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+    <div class="map-section">
+        <!-- Завдання 4: Фільтри з data-filter атрибутами -->
+        <div class="map-toolbar" id="filter-section">
+            <button class="filter-chip active" data-filter="all">🗺 Всі</button>
+            <button class="filter-chip" data-filter="popular">🔥 Популярні</button>
+            <button class="filter-chip" data-filter="new">✨ Нові</button>
+            <div id="cat-chips"></div>
         </div>
-    </nav>
-
-    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-        <!-- Ліва частина: Мапа та Фільтри (8 колонок) -->
-        <div class="lg:col-span-8 space-y-6">
+        <div style="position:relative; flex:1">
             <div id="map"></div>
-
-            <div class="flex items-center space-x-8 border-b border-slate-200">
-                <button onclick="changeView('all')" id="btn-view-all" class="tab-active py-3 font-bold text-sm transition">Всі локації</button>
-                <button onclick="changeView('fav')" id="btn-view-fav" class="py-3 font-bold text-sm text-slate-400 hover:text-blue-600 transition flex items-center">
-                    ⭐ Моє обране
-                </button>
-            </div>
-
-            <div id="places-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Картки місць -->
-            </div>
-        </div>
-
-        <!-- Права частина: Створення та Інфо (4 колонки) -->
-        <aside class="lg:col-span-4 space-y-6">
-            <!-- Форма створення (тепер тут) -->
-            <section class="bg-white p-7 rounded-[32px] shadow-sm border border-slate-100 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-5">
-                    <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"/></svg>
-                </div>
-
-                <h2 class="text-xl font-black mb-6 flex items-center">
-                    Нова локація
-                </h2>
-
-                <form id="place-form" class="space-y-4">
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Назва</label>
-                        <input type="text" id="name" placeholder="Назва закладу чи місця" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-500 border-2 outline-none transition" required>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Широта</label>
-                            <input type="number" step="any" id="lat" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-500 border-2 outline-none transition text-sm" required>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Довгота</label>
-                            <input type="number" step="any" id="lng" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-500 border-2 outline-none transition text-sm" required>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Категорія</label>
-                        <select id="category" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-500 border-2 outline-none transition text-sm cursor-pointer" required>
-                            <option value="" disabled selected>Завантаження...</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Опис</label>
-                        <textarea id="description" rows="3" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-blue-500 border-2 outline-none transition text-sm"></textarea>
-                    </div>
-
-                    <button type="submit" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-blue-600 shadow-xl shadow-slate-200 transition-all transform active:scale-95 flex items-center justify-center space-x-2">
-                        <span>Опублікувати</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>
-                    </button>
-                    <p class="text-[10px] text-center text-slate-400 font-medium">Поставте мітку на мапі, щоб заповнити координати</p>
-                </form>
-            </section>
-
-            <!-- Швидкі фільтри -->
-            <section class="bg-blue-600 rounded-[32px] p-6 text-white shadow-xl shadow-blue-100">
-                <h3 class="font-black text-lg mb-4">Швидкі фільтри</h3>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="fetchPlaces({is_popular: true})" class="bg-white/10 hover:bg-white/20 py-2 rounded-xl text-xs font-bold transition">🔥 Популярні</button>
-                    <button onclick="fetchPlaces({is_new: true})" class="bg-white/10 hover:bg-white/20 py-2 rounded-xl text-xs font-bold transition">✨ Новинки</button>
-                </div>
-            </section>
-        </aside>
-    </main>
-
-    <!-- Авторизація Модалка -->
-    <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl scale-95 transition-transform">
-            <h2 id="modal-title" class="text-2xl font-black mb-2">Увійти</h2>
-            <p id="modal-subtitle" class="text-slate-400 text-sm mb-6">Введіть ваші дані для доступу</p>
-
-            <form id="auth-form" class="space-y-4">
-                <input type="email" id="auth-email" placeholder="Email" class="w-full px-5 py-4 rounded-2xl bg-slate-100 outline-none border-2 border-transparent focus:border-blue-500 focus:bg-white transition" required>
-                <input type="password" id="auth-password" placeholder="Пароль" class="w-full px-5 py-4 rounded-2xl bg-slate-100 outline-none border-2 border-transparent focus:border-blue-500 focus:bg-white transition" required>
-                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700 transition shadow-lg shadow-blue-200">Продовжити</button>
-            </form>
-
-            <button onclick="toggleAuthMode()" id="switch-auth-btn" class="w-full mt-4 text-center text-xs font-bold text-slate-400 hover:text-blue-600 transition">Немає акаунту? Реєстрація</button>
-            <button onclick="toggleAuthModal()" class="w-full mt-2 text-slate-300 hover:text-slate-500 text-xs">Закрити</button>
+            <div class="map-hint" id="map-hint">Клікніть на карті, щоб вибрати координати</div>
         </div>
     </div>
 
-    <script>
-        const API_BASE_URL = window.location.origin;
-        let map, markers = [];
-        let isLoginMode = true;
-        let currentView = 'all'; // 'all' або 'fav'
-        let favoriteIds = new Set();
+    <div class="sidebar">
+        <div class="sidebar-tabs">
+            <button class="sidebar-tab active" id="tab-list">📍 Локації</button>
+            <button class="sidebar-tab" id="tab-fav">⭐ Обране</button>
+            <button class="sidebar-tab" id="tab-add">+ Додати</button>
+        </div>
+        <div class="sidebar-content" id="sidebar-content"></div>
+    </div>
+</div>
 
-        // 1. Ініціалізація
-        function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([48.9226, 24.7111], 13);
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
-            L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '©OpenStreetMap'
-            }).addTo(map);
-
-            map.on('click', (e) => {
-                document.getElementById('lat').value = e.latlng.lat.toFixed(6);
-                document.getElementById('lng').value = e.latlng.lng.toFixed(6);
-                showToast("📍 Координати вибрано", "info");
-            });
-        }
-
-        // 2. Системні функції
-        const getAuthHeader = () => {
-            const token = localStorage.getItem('token');
-            return token ? { 'Authorization': `Bearer ${token}` } : {};
-        };
-
-        function showToast(text, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const colors = {
-                success: 'bg-slate-900 text-white',
-                info: 'bg-blue-600 text-white',
-                error: 'bg-red-500 text-white'
-            };
-            toast.className = `${colors[type]} toast px-6 py-3 rounded-2xl shadow-xl mb-3 font-bold text-sm flex items-center space-x-2`;
-            toast.innerHTML = `<span>${text}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        // 3. Робота з даними
-        async function fetchPlaces(filters = {}) {
-            try {
-                if (localStorage.getItem('token')) await syncFavorites();
-
-                let endpoint = currentView === 'fav' ? '/favorites/' : '/places/';
-                let url = `${API_BASE_URL}${endpoint}`;
-
-                const params = new URLSearchParams(filters);
-                if (params.toString()) url += `?${params.toString()}`;
-
-                const response = await fetch(url, currentView === 'fav' ? { headers: getAuthHeader() } : {});
-                const data = await response.json();
-
-                // Якщо ми в режимі обраного, дані приходять як список об'єктів Favorite (з полем .place)
-                const places = currentView === 'fav' ? data.map(f => f.place) : data;
-                renderPlaces(places);
-            } catch (err) { console.error(err); }
-        }
-
-        async function syncFavorites() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/favorites/`, { headers: getAuthHeader() });
-                if (res.ok) {
-                    const favs = await res.json();
-                    favoriteIds = new Set(favs.map(f => f.place_id));
-                }
-            } catch (e) {}
-        }
-
-        function renderPlaces(places) {
-            const grid = document.getElementById('places-grid');
-            grid.innerHTML = '';
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
-
-            if (places.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-20 text-center text-slate-400 font-bold italic">Тут поки порожньо...</div>`;
-                return;
-            }
-
-            places.forEach(place => {
-                const isFav = favoriteIds.has(place.id);
-
-                // Маркер
-                const marker = L.marker([place.latitude, place.longitude]).addTo(map);
-                marker.bindPopup(`<div class="font-bold">${place.name}</div><div class="text-xs">${place.address || ''}</div>`);
-                markers.push(marker);
-
-                // Картка
-                const card = document.createElement('div');
-                card.className = "bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative";
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                            ${place.category_id || 'Локація'}
-                        </span>
-                        <div class="flex space-x-1">
-                            <button onclick="toggleFavorite(${place.id}, ${isFav})" class="w-10 h-10 rounded-full flex items-center justify-center transition ${isFav ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-100' : 'bg-slate-50 text-slate-300 hover:bg-yellow-50 hover:text-yellow-500'}">
-                                <svg class="w-5 h-5" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.382-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
-                            </button>
-                        </div>
-                    </div>
-                    <h3 class="font-black text-slate-800 text-lg mb-2 group-hover:text-blue-600 transition">${place.name}</h3>
-                    <p class="text-xs text-slate-400 mb-6 line-clamp-2 leading-relaxed">${place.description || 'Опис відсутній'}</p>
-
-                    <div class="flex items-center justify-between pt-4 border-t border-slate-50">
-                        <div class="flex items-center text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                            ${place.address || 'Центр'}
-                        </div>
-                        <button onclick="deletePlace(${place.id})" class="opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 transition text-[10px] font-bold uppercase">Видалити</button>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        async function toggleFavorite(id, currentlyFav) {
-            if (!localStorage.getItem('token')) return openAuthModal(true);
-
-            const method = currentlyFav ? 'DELETE' : 'POST';
-            const url = `${API_BASE_URL}/favorites/${id}`;
-
-            const res = await fetch(url, { method, headers: getAuthHeader() });
-            if (res.ok) {
-                showToast(currentlyFav ? "Видалено з обраного" : "Додано в обране ✨");
-                fetchPlaces();
-            }
-        }
-
-        async function deletePlace(id) {
-            if (!confirm('Видалити цю локацію для всіх?')) return;
-            const res = await fetch(`${API_BASE_URL}/places/${id}`, { method: 'DELETE', headers: getAuthHeader() });
-            if (res.ok) {
-                showToast("Локацію видалено");
-                fetchPlaces();
-            } else if (res.status === 401) openAuthModal(true);
-        }
-
-        function changeView(view) {
-            currentView = view;
-            document.getElementById('btn-view-all').className = view === 'all' ? 'tab-active py-3 font-bold text-sm transition' : 'py-3 font-bold text-sm text-slate-400 hover:text-blue-600 transition';
-            document.getElementById('btn-view-fav').className = view === 'fav' ? 'tab-active py-3 font-bold text-sm transition flex items-center' : 'py-3 font-bold text-sm text-slate-400 hover:text-blue-600 transition flex items-center';
-            fetchPlaces();
-        }
-
-        // 4. Форми та Авторизація
-        function updateAuthUI() {
-            const section = document.getElementById('auth-section');
-            const user = localStorage.getItem('user_name');
-            if (user) {
-                section.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <div class="text-right">
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Мій профіль</p>
-                            <p class="text-sm font-bold text-slate-900">${user}</p>
-                        </div>
-                        <button onclick="logout()" class="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                        </button>
-                    </div>
-                `;
-            } else {
-                section.innerHTML = `
-                    <button onclick="openAuthModal(true)" class="text-sm font-black text-slate-400 hover:text-blue-600 transition uppercase tracking-widest">Вхід</button>
-                    <button onclick="openAuthModal(false)" class="bg-blue-600 text-white px-6 py-3 rounded-2xl text-xs font-black shadow-lg shadow-blue-200 hover:bg-blue-700 transition uppercase tracking-widest">Реєстрація</button>
-                `;
-            }
-        }
-
-        function openAuthModal(login) {
-            isLoginMode = login;
-            document.getElementById('modal-title').innerText = login ? 'З поверненням!' : 'Створити акаунт';
-            document.getElementById('switch-auth-btn').innerText = login ? 'Немає акаунту? Реєстрація' : 'Вже є акаунт? Увійти';
-            document.getElementById('auth-modal').classList.remove('hidden');
-        }
-        function toggleAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
-        function toggleAuthMode() { openAuthModal(!isLoginMode); }
-
-        document.getElementById('auth-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-
-            try {
-                let response;
-                if (isLoginMode) {
-                    const body = new FormData();
-                    body.append('username', email);
-                    body.append('password', password);
-                    response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', body });
-                } else {
-                    response = await fetch(`${API_BASE_URL}/users/register`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password, full_name: email.split('@')[0] })
-                    });
-                }
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (isLoginMode) {
-                        localStorage.setItem('token', data.access_token);
-                        localStorage.setItem('user_name', email.split('@')[0]);
-                        toggleAuthModal();
-                        updateAuthUI();
-                        fetchPlaces();
-                        showToast("Успішний вхід!");
-                    } else {
-                        isLoginMode = true;
-                        openAuthModal(true);
-                        showToast("Реєстрація успішна! Увійдіть.");
-                    }
-                } else {
-                    showToast("Помилка даних", "error");
-                }
-            } catch (e) { showToast("Сервер не відповідає", "error"); }
-        };
-
-        document.getElementById('place-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const data = {
-                name: document.getElementById('name').value,
-                description: document.getElementById('description').value,
-                address: "",
-                latitude: parseFloat(document.getElementById('lat').value),
-                longitude: parseFloat(document.getElementById('lng').value),
-                category_id: parseInt(document.getElementById('category').value),
-                is_new: true,
-                is_popular: false
-            };
-
-            const res = await fetch(`${API_BASE_URL}/places/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-                body: JSON.stringify(data)
-            });
-
-            if (res.ok) {
-                showToast("Локація опублікована! 🎉");
-                e.target.reset();
-                fetchPlaces();
-            } else if (res.status === 401) {
-                openAuthModal(true);
-            } else {
-                showToast("Лише адмін може створювати місця", "error");
-            }
-        };
-
-        function logout() {
-            localStorage.clear();
-            updateAuthUI();
-            currentView = 'all';
-            favoriteIds.clear();
-            fetchPlaces();
-        }
-
-        async function loadCategories() {
-            const res = await fetch(`${API_BASE_URL}/categories/`);
-            const cats = await res.json();
-            const sel = document.getElementById('category');
-            sel.innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        }
-
-        window.onload = () => {
-            initMap();
-            updateAuthUI();
-            loadCategories();
-            fetchPlaces();
-        };
-    </script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/app.js"></script>
 </body>
 </html>
