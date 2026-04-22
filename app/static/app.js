@@ -8,14 +8,14 @@ let allPlaces = [];
 let categories = [];
 let isLoginMode = true;
 
-function showLoader() {
-    const loader = document.getElementById('loader');
-    if (loader) loader.style.display = 'flex';
-}
-
 function hideLoader() {
     const loader = document.getElementById('loader');
     if (loader) loader.style.display = 'none';
+}
+
+function showLoader() {
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = 'flex';
 }
 
 function renderCards(dataArray) {
@@ -69,10 +69,7 @@ async function loadData() {
         }
 
         const data = await response.json();
-
         renderCards(data);
-
-        allPlaces = data;
 
     } catch (error) {
         const container = document.getElementById('items-grid');
@@ -109,9 +106,6 @@ function filterLocalCards(filter) {
     });
 }
 
-/* ═══════════════════════════════════
-   MAP
-═══════════════════════════════════ */
 function initMap() {
     map = L.map('map', { zoomControl: false }).setView([48.9226, 24.7111], 14);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -188,9 +182,6 @@ function highlightCard(id) {
     }
 }
 
-/* ═══════════════════════════════════
-   API DATA (для sidebar з сервера)
-═══════════════════════════════════ */
 async function fetchCategories() {
     try {
         const res = await fetch(`${API}/categories/`);
@@ -257,9 +248,6 @@ async function fetchFavorites() {
     } catch (e) {}
 }
 
-/* ═══════════════════════════════════
-   RENDER (sidebar)
-═══════════════════════════════════ */
 function renderList(places, isFav = false) {
     const content = document.getElementById('sidebar-content');
     if (!content) return;
@@ -386,9 +374,6 @@ function renderAddForm() {
     document.getElementById('add-place-form').addEventListener('submit', submitPlace);
 }
 
-/* ═══════════════════════════════════
-   FILTERS
-═══════════════════════════════════ */
 function applyFilter(type, catId = null, clickedBtn = null) {
     currentFilter = type;
 
@@ -414,9 +399,6 @@ function applyFilter(type, catId = null, clickedBtn = null) {
     }
 }
 
-/* ═══════════════════════════════════
-   ACTIONS
-═══════════════════════════════════ */
 async function toggleFav(id, isFav, btnEl) {
     if (!getToken()) { openModal(true); return; }
 
@@ -482,9 +464,6 @@ async function submitPlace(e) {
     }
 }
 
-/* ═══════════════════════════════════
-   TABS
-═══════════════════════════════════ */
 function switchTab(tab) {
     currentTab = tab;
     document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
@@ -495,10 +474,8 @@ function switchTab(tab) {
     else if (tab === 'add') renderAddForm();
 }
 
-/* ═══════════════════════════════════
-   AUTH
-═══════════════════════════════════ */
 function getToken() { return localStorage.getItem('if_token'); }
+
 function authHeaders() {
     const t = getToken();
     return t ? { 'Authorization': `Bearer ${t}` } : {};
@@ -671,7 +648,6 @@ window.addEventListener('load', async () => {
     document.getElementById('tab-add').addEventListener('click', () => switchTab('add'));
 
     await loadData();
-
     await fetchCategories();
     await fetchPlaces();
     renderList(allPlaces);

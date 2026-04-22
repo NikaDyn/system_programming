@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IF Explorer — Локації Івано-Франківська</title>
+    <title>FranykLife</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -28,6 +28,7 @@
                 <label>Пароль</label>
                 <input type="password" id="auth-password" placeholder="••••••••" required>
             </div>
+
             <button type="submit" class="modal-submit cta-btn" id="modal-btn">Увійти</button>
         </form>
         <div class="modal-toggle">
@@ -40,8 +41,9 @@
 <header>
     <div class="logo">
         <div class="logo-dot"></div>
-        IF Explorer
+        FranykLife
     </div>
+
     <button class="burger-btn" id="burger-btn" aria-label="Відкрити меню">
         <span></span><span></span><span></span>
     </button>
@@ -62,6 +64,7 @@
 
 <div class="layout">
     <div class="map-section">
+
         <div class="map-toolbar" id="filter-section">
             <button class="filter-chip active" data-filter="all">🗺 Всі</button>
             <button class="filter-chip" data-filter="popular">🔥 Популярні</button>
@@ -90,10 +93,12 @@
         <p class="json-section-sub">Дані завантажені через Fetch API з локального файлу</p>
     </div>
 
+
     <div id="loader" class="loader">
         <div class="spinner"></div>
         <span>Завантаження даних...</span>
     </div>
+
 
     <div id="items-grid" class="items-grid"></div>
 </section>
