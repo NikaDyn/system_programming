@@ -14,7 +14,6 @@
 
 <div id="toast-container"></div>
 
-<!-- AUTH MODAL -->
 <div id="auth-modal" class="modal-overlay">
     <div class="modal">
         <button class="modal-close" id="modal-close-btn">✕</button>
@@ -29,7 +28,6 @@
                 <label>Пароль</label>
                 <input type="password" id="auth-password" placeholder="••••••••" required>
             </div>
-            <!-- Завдання 1: CTA-кнопка з анімацією -->
             <button type="submit" class="modal-submit cta-btn" id="modal-btn">Увійти</button>
         </form>
         <div class="modal-toggle">
@@ -39,20 +37,17 @@
     </div>
 </div>
 
-<!-- HEADER -->
 <header>
     <div class="logo">
         <div class="logo-dot"></div>
         IF Explorer
     </div>
-    <!-- Завдання 2: Бургер-кнопка -->
     <button class="burger-btn" id="burger-btn" aria-label="Відкрити меню">
         <span></span><span></span><span></span>
     </button>
     <div class="header-right" id="header-auth"></div>
 </header>
 
-<!-- Завдання 2: Повноекранне мобільне меню -->
 <nav class="mobile-menu" id="mobile-menu">
     <button class="mobile-menu-close" id="mobile-menu-close">✕</button>
     <ul class="mobile-nav-links">
@@ -65,10 +60,8 @@
     </div>
 </nav>
 
-<!-- MAIN LAYOUT -->
 <div class="layout">
     <div class="map-section">
-        <!-- Завдання 4: Фільтри з data-filter атрибутами -->
         <div class="map-toolbar" id="filter-section">
             <button class="filter-chip active" data-filter="all">🗺 Всі</button>
             <button class="filter-chip" data-filter="popular">🔥 Популярні</button>
@@ -90,6 +83,20 @@
         <div class="sidebar-content" id="sidebar-content"></div>
     </div>
 </div>
+
+<section class="json-section">
+    <div class="json-section-header">
+        <h2 class="json-section-title">Локації з <span>data.json</span></h2>
+        <p class="json-section-sub">Дані завантажені через Fetch API з локального файлу</p>
+    </div>
+
+    <div id="loader" class="loader">
+        <div class="spinner"></div>
+        <span>Завантаження даних...</span>
+    </div>
+
+    <div id="items-grid" class="items-grid"></div>
+</section>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/static/app.js"></script>

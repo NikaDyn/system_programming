@@ -1,7 +1,3 @@
-
-/* ═══════════════════════════════════════════
-   ЗМІННІ
-═══════════════════════════════════════════ */
 :root {
     --ink: #0f0e0b;
     --paper: #f5f2ec;
@@ -13,9 +9,6 @@
     --radius: 20px;
 }
 
-/* ═══════════════════════════════════════════
-   RESET & BASE
-═══════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -25,12 +18,8 @@ body {
     min-height: 100vh;
 }
 
-/* Завдання 2: Блокування скролу при відкритому меню */
 body.no-scroll { overflow: hidden; }
 
-/* ═══════════════════════════════════════════
-   HEADER
-═══════════════════════════════════════════ */
 header {
     background: var(--ink);
     color: white;
@@ -68,9 +57,6 @@ header {
     50% { transform: scale(1.5); opacity: 0.7; }
 }
 
-/* ═══════════════════════════════════════════
-   Завдання 1: АНІМОВАНА CTA-КНОПКА
-═══════════════════════════════════════════ */
 .cta-btn {
     padding: 14px 24px;
     background: var(--ink);
@@ -80,26 +66,22 @@ header {
     font-family: 'Dela Gothic One', cursive;
     font-size: 15px;
     cursor: pointer;
-    /* Плавний перехід для всіх змін */
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
 }
 
-/* Hover: легка зміна + тінь */
 .cta-btn:hover {
     background: var(--accent);
     box-shadow: 0 8px 24px rgba(232, 76, 43, 0.35);
     transform: translateY(-2px);
 }
 
-/* Active: ефект занурення */
 .cta-btn:active {
     transform: scale(0.95) translateY(0);
     box-shadow: 0 2px 8px rgba(232, 76, 43, 0.25);
 }
 
-/* Заблокована кнопка під час обробки */
 .cta-btn:disabled {
     background: #ccc;
     cursor: not-allowed;
@@ -107,7 +89,6 @@ header {
     box-shadow: none;
 }
 
-/* Спінер всередині кнопки */
 .cta-btn .spinner-inline {
     display: inline-block;
     width: 14px;
@@ -120,11 +101,8 @@ header {
     vertical-align: middle;
 }
 
-/* ═══════════════════════════════════════════
-   Завдання 2: БУРГЕР-МЕНЮ
-═══════════════════════════════════════════ */
 .burger-btn {
-    display: none; /* Ховаємо на десктопі */
+    display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -151,7 +129,6 @@ header {
     transform-origin: center;
 }
 
-/* Анімація бургера → хрестик */
 .burger-btn.is-open span:nth-child(1) {
     transform: translateY(7px) rotate(45deg);
 }
@@ -163,7 +140,6 @@ header {
     transform: translateY(-7px) rotate(-45deg);
 }
 
-/* Повноекранне мобільне меню */
 .mobile-menu {
     position: fixed;
     inset: 0;
@@ -175,12 +151,10 @@ header {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    /* Закритий стан */
     transform: translateY(-100%);
     transition: transform 0.4s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
-/* Відкритий стан */
 .mobile-menu.is-open {
     transform: translateY(0);
 }
@@ -235,15 +209,11 @@ header {
     text-align: center;
 }
 
-/* Показуємо бургер тільки на мобільних */
 @media (max-width: 768px) {
     .burger-btn { display: flex; }
     .header-right { display: none; }
 }
 
-/* ═══════════════════════════════════════════
-   HEADER AUTH BUTTONS
-═══════════════════════════════════════════ */
 .header-right {
     display: flex;
     align-items: center;
@@ -275,9 +245,6 @@ header {
 }
 .btn-accent:hover { background: #d43e22; transform: translateY(-1px); }
 
-/* ═══════════════════════════════════════════
-   LAYOUT
-═══════════════════════════════════════════ */
 .layout {
     display: grid;
     grid-template-columns: 1fr 440px;
@@ -292,9 +259,6 @@ header {
     overflow: hidden;
 }
 
-/* ═══════════════════════════════════════════
-   Завдання 4: ФІЛЬТРИ (data-filter атрибути)
-═══════════════════════════════════════════ */
 .map-toolbar {
     padding: 16px 24px;
     display: flex;
@@ -335,9 +299,6 @@ header {
     color: white;
 }
 
-/* ═══════════════════════════════════════════
-   MAP
-═══════════════════════════════════════════ */
 #map {
     position: absolute;
     inset: 0;
@@ -366,9 +327,6 @@ header {
     transition: opacity 0.5s;
 }
 
-/* ═══════════════════════════════════════════
-   SIDEBAR
-═══════════════════════════════════════════ */
 .sidebar {
     background: var(--surface);
     border-left: 1px solid var(--border);
@@ -408,9 +366,6 @@ header {
     scrollbar-color: var(--border) transparent;
 }
 
-/* ═══════════════════════════════════════════
-   PLACE CARDS
-═══════════════════════════════════════════ */
 .places-list {
     padding: 16px;
     display: flex;
@@ -439,7 +394,6 @@ header {
     background: white;
 }
 
-/* Завдання 4: клас .hidden для фільтрації */
 .place-card.hidden { display: none; }
 
 .place-card-header {
@@ -460,9 +414,6 @@ header {
     color: var(--muted);
 }
 
-/* ═══════════════════════════════════════════
-   Завдання 3: КНОПКА УЛЮБЛЕНОГО (сердечко/зірочка)
-═══════════════════════════════════════════ */
 .fav-btn {
     width: 32px;
     height: 32px;
@@ -569,9 +520,6 @@ header {
 .place-card:hover .delete-btn { opacity: 1; }
 .delete-btn:hover { background: #fee2e2; color: #dc2626; }
 
-/* ═══════════════════════════════════════════
-   ADD FORM
-═══════════════════════════════════════════ */
 .add-form-wrap { padding: 20px; }
 
 .form-section-title {
@@ -643,9 +591,6 @@ header {
     gap: 6px;
 }
 
-/* ═══════════════════════════════════════════
-   EMPTY STATE
-═══════════════════════════════════════════ */
 .empty-state {
     padding: 60px 24px;
     text-align: center;
@@ -656,9 +601,6 @@ header {
 .empty-state h3 { font-weight: 600; margin-bottom: 6px; color: var(--ink); }
 .empty-state p { font-size: 13px; line-height: 1.5; }
 
-/* ═══════════════════════════════════════════
-   AUTH MODAL
-═══════════════════════════════════════════ */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -739,9 +681,6 @@ header {
 
 .modal-close:hover { background: var(--border); color: var(--ink); }
 
-/* ═══════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════ */
 #toast-container {
     position: fixed;
     bottom: 24px;
@@ -771,9 +710,6 @@ header {
 .toast-error { background: #dc2626; color: white; }
 .toast-info { background: var(--accent2); color: white; }
 
-/* ═══════════════════════════════════════════
-   LOADING
-═══════════════════════════════════════════ */
 .loading {
     display: flex;
     align-items: center;
@@ -795,9 +731,6 @@ header {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ═══════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════ */
 @media (max-width: 900px) {
     .layout {
         grid-template-columns: 1fr;
@@ -821,3 +754,63 @@ header {
         border-top: 1px solid var(--border);
     }
 }
+
+.json-section {
+    padding: 48px 32px;
+    background: var(--paper);
+    border-top: 1px solid var(--border);
+}
+
+.json-section-header {
+    margin-bottom: 28px;
+}
+
+.json-section-title {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 28px;
+    color: var(--ink);
+    margin-bottom: 6px;
+}
+
+.json-section-title span { color: var(--accent); }
+
+.json-section-sub {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.loader {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Повідомлення про помилку */
+.error-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--muted);
+}
+
+.error-icon { font-size: 40px; margin-bottom: 12px; }
+
+.error-message h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 8px;
+}
+
+.error-message p { font-size: 13px; }

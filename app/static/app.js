@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════
-   IF Explorer — app.js
-   Практична робота 3: DOM, події, керування станом
-═══════════════════════════════════════════════════════════ */
-
 const API = window.location.origin;
 
 let map, markers = [];
@@ -12,6 +7,107 @@ let favoriteIds = new Set();
 let allPlaces = [];
 let categories = [];
 let isLoginMode = true;
+
+function showLoader() {
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = 'flex';
+}
+
+function hideLoader() {
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = 'none';
+}
+
+function renderCards(dataArray) {
+    const container = document.getElementById('items-grid');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    dataArray.forEach(item => {
+        const cardHTML = `
+            <div class="place-card" data-category="${item.category}" data-is-popular="${item.is_popular}" data-is-new="${item.is_new}">
+                <div class="place-card-header">
+                    <span class="place-cat-badge">${item.category}</span>
+                    <button class="fav-btn" data-id="${item.id}" title="Додати в обране">☆</button>
+                </div>
+                <div class="place-name">${item.name}</div>
+                <div class="place-desc">${item.description}</div>
+                <div class="place-meta">
+                    <div class="place-address">
+                        <svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5C0 8.75 5 12 5 12C5 12 10 8.75 10 5C10 2.24 7.76 0 5 0ZM5 6.5C4.17 6.5 3.5 5.83 3.5 5C3.5 4.17 4.17 3.5 5 3.5C5.83 3.5 6.5 4.17 6.5 5C6.5 5.83 5.83 6.5 5 6.5Z" fill="currentColor"/></svg>
+                        ${item.address}
+                    </div>
+                    <div class="place-tags">
+                        ${item.is_new ? '<span class="tag tag-new">Нове</span>' : ''}
+                        ${item.is_popular ? '<span class="tag tag-popular">Топ</span>' : ''}
+                        <span class="tag" style="background:#e8f4fd;color:#2b6cb0">★ ${item.rating}</span>
+                    </div>
+                </div>
+            </div>`;
+
+        container.insertAdjacentHTML('beforeend', cardHTML);
+    });
+
+    container.querySelectorAll('.fav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            btn.classList.toggle('is-active');
+            btn.textContent = btn.classList.contains('is-active') ? '★' : '☆';
+        });
+    });
+}
+
+async function loadData() {
+    showLoader();
+
+    try {
+        const response = await fetch('/static/data.json');
+
+        if (!response.ok) {
+            throw new Error(`HTTP помилка: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        renderCards(data);
+
+        allPlaces = data;
+
+    } catch (error) {
+        const container = document.getElementById('items-grid');
+        if (container) {
+            container.innerHTML = `
+                <div class="error-message">
+                    <div class="error-icon">⚠️</div>
+                    <h3>Вибачте, дані тимчасово недоступні.</h3>
+                    <p>Спробуйте оновити сторінку.</p>
+                </div>`;
+        }
+    } finally {
+        hideLoader();
+    }
+}
+
+function filterLocalCards(filter) {
+    const cards = document.querySelectorAll('#items-grid .place-card');
+
+    cards.forEach(card => {
+        let visible = false;
+
+        if (filter === 'all') {
+            visible = true;
+        } else if (filter === 'popular') {
+            visible = card.dataset.isPopular === 'true';
+        } else if (filter === 'new') {
+            visible = card.dataset.isNew === 'true';
+        } else {
+            visible = card.dataset.category === filter;
+        }
+
+        card.classList.toggle('hidden', !visible);
+    });
+}
 
 /* ═══════════════════════════════════
    MAP
@@ -93,7 +189,7 @@ function highlightCard(id) {
 }
 
 /* ═══════════════════════════════════
-   DATA
+   API DATA (для sidebar з сервера)
 ═══════════════════════════════════ */
 async function fetchCategories() {
     try {
@@ -111,7 +207,6 @@ function renderCategoryChips() {
         `<button class="filter-chip" data-filter="cat-${c.id}">${c.name}</button>`
     ).join('');
 
-    // Завдання 4: навішуємо події на динамічні чіпи
     wrap.querySelectorAll('.filter-chip').forEach(btn => {
         btn.addEventListener('click', () => {
             const catId = parseInt(btn.dataset.filter.replace('cat-', ''));
@@ -132,7 +227,8 @@ async function fetchPlaces(params = {}) {
         const url = new URL(`${API}/places/`);
         Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
         const res = await fetch(url);
-        allPlaces = await res.json();
+        const places = await res.json();
+        allPlaces = places;
 
         if (getToken()) await syncFavorites();
 
@@ -162,7 +258,7 @@ async function fetchFavorites() {
 }
 
 /* ═══════════════════════════════════
-   RENDER
+   RENDER (sidebar)
 ═══════════════════════════════════ */
 function renderList(places, isFav = false) {
     const content = document.getElementById('sidebar-content');
@@ -188,7 +284,6 @@ function renderList(places, isFav = false) {
         const card = document.createElement('div');
         card.className = 'place-card';
         card.id = `card-${p.id}`;
-        // Завдання 4: data-category для фільтрації
         card.dataset.category = p.category_id || '';
         card.dataset.isNew = p.is_new ? 'true' : 'false';
         card.dataset.isPopular = p.is_popular ? 'true' : 'false';
@@ -197,7 +292,6 @@ function renderList(places, isFav = false) {
             <button class="delete-btn">видалити</button>
             <div class="place-card-header">
                 <span class="place-cat-badge">${catName}</span>
-                <!-- Завдання 3: кнопка улюбленого -->
                 <button class="fav-btn ${isFavPlace ? 'is-active' : ''}" title="${isFavPlace ? 'Прибрати з обраного' : 'Додати в обране'}">
                     ${isFavPlace ? '★' : '☆'}
                 </button>
@@ -215,21 +309,14 @@ function renderList(places, isFav = false) {
                 </div>
             </div>`;
 
-        // Клік на картку → фокус на карті
-        card.addEventListener('click', () => {
-            panToPlace(p.latitude, p.longitude, p.id);
-        });
+        card.addEventListener('click', () => panToPlace(p.latitude, p.longitude, p.id));
 
-        // Завдання 3: Клік на сердечко — перемикання стану classList.toggle
-        const favBtn = card.querySelector('.fav-btn');
-        favBtn.addEventListener('click', (e) => {
+        card.querySelector('.fav-btn').addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleFav(p.id, favBtn.classList.contains('is-active'), favBtn);
+            toggleFav(p.id, card.querySelector('.fav-btn').classList.contains('is-active'), card.querySelector('.fav-btn'));
         });
 
-        // Видалення
-        const delBtn = card.querySelector('.delete-btn');
-        delBtn.addEventListener('click', (e) => {
+        card.querySelector('.delete-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             deletePlace(p.id);
         });
@@ -287,7 +374,6 @@ function renderAddForm() {
                     <label>Опис</label>
                     <textarea id="form-desc" rows="3" placeholder="Розкажіть про це місце..."></textarea>
                 </div>
-                <!-- Завдання 1: CTA кнопка з анімацією -->
                 <button type="submit" class="cta-btn form-submit">Опублікувати ↗</button>
             </form>
             <div class="map-hint-form">
@@ -301,12 +387,11 @@ function renderAddForm() {
 }
 
 /* ═══════════════════════════════════
-   Завдання 4: ФІЛЬТРАЦІЯ
+   FILTERS
 ═══════════════════════════════════ */
 function applyFilter(type, catId = null, clickedBtn = null) {
     currentFilter = type;
 
-    // Скидаємо всі активні класи
     document.querySelectorAll('.filter-chip').forEach(c => {
         c.classList.remove('active', 'active-blue');
     });
@@ -314,12 +399,15 @@ function applyFilter(type, catId = null, clickedBtn = null) {
     if (type === 'all') {
         document.querySelector('[data-filter="all"]')?.classList.add('active');
         fetchPlaces();
+        filterLocalCards('all');
     } else if (type === 'popular') {
         document.querySelector('[data-filter="popular"]')?.classList.add('active');
         fetchPlaces({ is_popular: true });
+        filterLocalCards('popular');
     } else if (type === 'new') {
         document.querySelector('[data-filter="new"]')?.classList.add('active');
         fetchPlaces({ is_new: true });
+        filterLocalCards('new');
     } else if (type === 'cat' && catId) {
         if (clickedBtn) clickedBtn.classList.add('active-blue');
         fetchPlaces({ category_id: catId });
@@ -329,8 +417,6 @@ function applyFilter(type, catId = null, clickedBtn = null) {
 /* ═══════════════════════════════════
    ACTIONS
 ═══════════════════════════════════ */
-
-/* Завдання 3: Перемикання улюбленого через classList.toggle */
 async function toggleFav(id, isFav, btnEl) {
     if (!getToken()) { openModal(true); return; }
 
@@ -338,23 +424,13 @@ async function toggleFav(id, isFav, btnEl) {
     const res = await fetch(`${API}/favorites/${id}`, { method, headers: authHeaders() });
 
     if (res.ok) {
-        // Перемикаємо клас через classList.toggle / add / remove
         btnEl.classList.toggle('is-active');
         const nowActive = btnEl.classList.contains('is-active');
         btnEl.textContent = nowActive ? '★' : '☆';
-
-        if (nowActive) {
-            favoriteIds.add(id);
-            showToast('Додано в обране ✨');
-        } else {
-            favoriteIds.delete(id);
-            showToast('Видалено з обраного', 'info');
-        }
-
+        if (nowActive) { favoriteIds.add(id); showToast('Додано в обране ✨'); }
+        else { favoriteIds.delete(id); showToast('Видалено з обраного', 'info'); }
         if (currentTab === 'fav') fetchFavorites();
-    } else if (res.status === 401) {
-        openModal(true);
-    }
+    } else if (res.status === 401) { openModal(true); }
 }
 
 async function deletePlace(id) {
@@ -368,13 +444,9 @@ async function deletePlace(id) {
     else if (res.status === 403) showToast('Тільки адмін може видаляти', 'error');
 }
 
-/* Завдання 1: Відправлення форми з блокуванням кнопки */
 async function submitPlace(e) {
     e.preventDefault();
-
     const submitBtn = e.target.querySelector('.cta-btn');
-
-    // Блокуємо кнопку та показуємо спінер
     submitBtn.disabled = true;
     submitBtn.innerHTML = `<span class="spinner-inline"></span> Обробка...`;
 
@@ -405,7 +477,6 @@ async function submitPlace(e) {
         else if (res.status === 403) showToast('Тільки адмін може додавати місця', 'error');
         else showToast('Помилка при збереженні', 'error');
     } finally {
-        // Розблоковуємо кнопку
         submitBtn.disabled = false;
         submitBtn.innerHTML = 'Опублікувати ↗';
     }
@@ -428,7 +499,6 @@ function switchTab(tab) {
    AUTH
 ═══════════════════════════════════ */
 function getToken() { return localStorage.getItem('if_token'); }
-
 function authHeaders() {
     const t = getToken();
     return t ? { 'Authorization': `Bearer ${t}` } : {};
@@ -480,9 +550,6 @@ function updateHeaderAuth() {
     }
 }
 
-/* ═══════════════════════════════════
-   TOAST
-═══════════════════════════════════ */
 function showToast(msg, type = 'success') {
     const container = document.getElementById('toast-container');
     const el = document.createElement('div');
@@ -496,23 +563,17 @@ function showToast(msg, type = 'success') {
     }, 2800);
 }
 
-/* ═══════════════════════════════════
-   INIT — навішуємо всі події через addEventListener
-═══════════════════════════════════ */
 window.addEventListener('load', async () => {
     initMap();
     updateHeaderAuth();
 
-    // --- Завдання 2: Бургер-меню ---
     const burgerBtn = document.getElementById('burger-btn');
     const mobileMenu = document.getElementById('mobile-menu');
     const mobileClose = document.getElementById('mobile-menu-close');
 
     burgerBtn.addEventListener('click', () => {
-        // classList.toggle — відкриває/закриває меню
         burgerBtn.classList.toggle('is-open');
         mobileMenu.classList.toggle('is-open');
-        // Блокування скролу
         document.body.classList.toggle('no-scroll');
     });
 
@@ -522,7 +583,6 @@ window.addEventListener('load', async () => {
         document.body.classList.remove('no-scroll');
     });
 
-    // Закриття при кліку на пункт меню
     document.querySelectorAll('.mobile-nav-link').forEach(link => {
         link.addEventListener('click', () => {
             burgerBtn.classList.remove('is-open');
@@ -538,7 +598,6 @@ window.addEventListener('load', async () => {
         openModal(true);
     });
 
-    // --- Auth modal ---
     document.getElementById('modal-close-btn').addEventListener('click', closeModal);
     document.getElementById('auth-modal').addEventListener('click', (e) => {
         if (e.target === document.getElementById('auth-modal')) closeModal();
@@ -554,7 +613,6 @@ window.addEventListener('load', async () => {
         const password = document.getElementById('auth-password').value;
         const btn = document.getElementById('modal-btn');
 
-        // Завдання 1: блокування кнопки під час запиту
         btn.disabled = true;
         btn.innerHTML = `<span class="spinner-inline"></span> Обробка...`;
 
@@ -599,7 +657,6 @@ window.addEventListener('load', async () => {
         }
     });
 
-    // --- Завдання 4: Фільтри ---
     document.querySelectorAll('.filter-chip[data-filter]').forEach(btn => {
         btn.addEventListener('click', () => {
             const f = btn.dataset.filter;
@@ -609,12 +666,12 @@ window.addEventListener('load', async () => {
         });
     });
 
-    // --- Sidebar tabs ---
     document.getElementById('tab-list').addEventListener('click', () => switchTab('list'));
     document.getElementById('tab-fav').addEventListener('click', () => switchTab('fav'));
     document.getElementById('tab-add').addEventListener('click', () => switchTab('add'));
 
-    // --- Завантаження даних ---
+    await loadData();
+
     await fetchCategories();
     await fetchPlaces();
     renderList(allPlaces);
