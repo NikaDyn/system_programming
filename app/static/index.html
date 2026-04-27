@@ -12,23 +12,24 @@
 </head>
 <body>
 
-<div id="toast-container"></div>
+<div id="toast-container" role="status" aria-live="polite"></div>
 
-<div id="auth-modal" class="modal-overlay">
+<div id="auth-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal">
-        <button class="modal-close" id="modal-close-btn">✕</button>
+        <button class="modal-close" id="modal-close-btn" aria-label="Закрити">✕</button>
         <h2 class="modal-title" id="modal-title">З поверненням</h2>
         <p class="modal-sub" id="modal-sub">Увійдіть у свій акаунт</p>
-        <form id="auth-form">
+        <form id="auth-form" novalidate>
             <div class="field">
-                <label>Email</label>
-                <input type="email" id="auth-email" placeholder="ваш@email.com" required>
+                <label for="auth-email">Email</label>
+                <input type="email" id="auth-email" name="email" placeholder="ваш@email.com" required autocomplete="email">
+                <span class="error-message">Введіть коректний email</span>
             </div>
             <div class="field">
-                <label>Пароль</label>
-                <input type="password" id="auth-password" placeholder="••••••••" required>
+                <label for="auth-password">Пароль</label>
+                <input type="password" id="auth-password" name="password" placeholder="••••••••" required minlength="6" autocomplete="current-password">
+                <span class="error-message">Мінімум 6 символів</span>
             </div>
-
             <button type="submit" class="modal-submit cta-btn" id="modal-btn">Увійти</button>
         </form>
         <div class="modal-toggle">
@@ -38,70 +39,104 @@
     </div>
 </div>
 
-<header>
+<header role="banner">
     <div class="logo">
-        <div class="logo-dot"></div>
+        <div class="logo-dot" aria-hidden="true"></div>
         FranykLife
     </div>
-
-    <button class="burger-btn" id="burger-btn" aria-label="Відкрити меню">
+    <button class="burger-btn" id="burger-btn" aria-label="Відкрити меню" aria-expanded="false" aria-controls="mobile-menu">
         <span></span><span></span><span></span>
     </button>
     <div class="header-right" id="header-auth"></div>
 </header>
 
-<nav class="mobile-menu" id="mobile-menu">
-    <button class="mobile-menu-close" id="mobile-menu-close">✕</button>
+<nav class="mobile-menu" id="mobile-menu" aria-label="Мобільна навігація">
+    <button class="mobile-menu-close" id="mobile-menu-close" aria-label="Закрити меню">✕</button>
     <ul class="mobile-nav-links">
-        <li><a href="#map" class="mobile-nav-link">🗺 Карта</a></li>
-        <li><a href="#filter-section" class="mobile-nav-link">📍 Локації</a></li>
-        <li><a href="#add-section" class="mobile-nav-link">+ Додати місце</a></li>
+        <li><a href="#map-section" class="mobile-nav-link">🗺 Карта</a></li>
+        <li><a href="#locations-section" class="mobile-nav-link">📍 Локації</a></li>
+        <li><a href="#contact-section" class="mobile-nav-link">✉ Зв'язок</a></li>
     </ul>
     <div class="mobile-menu-footer">
         <button class="cta-btn mobile-login-btn" id="mobile-login-btn">Увійти</button>
     </div>
 </nav>
 
-<div class="layout">
-    <div class="map-section">
+<main id="main-content">
 
-        <div class="map-toolbar" id="filter-section">
+    <section id="map-section" class="map-section" aria-label="Карта локацій">
+        <h2 class="visually-hidden">Інтерактивна карта</h2>
+        <div class="map-toolbar" id="filter-section" role="group" aria-label="Фільтри локацій">
             <button class="filter-chip active" data-filter="all">🗺 Всі</button>
             <button class="filter-chip" data-filter="popular">🔥 Популярні</button>
             <button class="filter-chip" data-filter="new">✨ Нові</button>
             <div id="cat-chips"></div>
         </div>
-        <div style="position:relative; flex:1">
-            <div id="map"></div>
-            <div class="map-hint" id="map-hint">Клікніть на карті, щоб вибрати координати</div>
+        <div class="map-wrapper">
+            <div id="map" role="application" aria-label="Карта"></div>
+            <div class="map-hint" id="map-hint" aria-live="polite">Клікніть на карті, щоб вибрати координати</div>
         </div>
-    </div>
+    </section>
 
-    <div class="sidebar">
-        <div class="sidebar-tabs">
-            <button class="sidebar-tab active" id="tab-list">📍 Локації</button>
-            <button class="sidebar-tab" id="tab-fav">⭐ Обране</button>
-            <button class="sidebar-tab" id="tab-add">+ Додати</button>
+    <aside class="sidebar" aria-label="Список локацій">
+        <div class="sidebar-tabs" role="tablist">
+            <button class="sidebar-tab active" id="tab-list" role="tab" aria-selected="true">📍 Локації</button>
+            <button class="sidebar-tab" id="tab-fav" role="tab" aria-selected="false">⭐ Обране</button>
+            <button class="sidebar-tab" id="tab-add" role="tab" aria-selected="false">+ Додати</button>
         </div>
-        <div class="sidebar-content" id="sidebar-content"></div>
+        <div class="sidebar-content" id="sidebar-content" role="tabpanel"></div>
+    </aside>
+
+    <section id="locations-section" class="json-section" aria-labelledby="json-section-title">
+        <div class="json-section-header">
+            <h2 class="json-section-title" id="json-section-title">Локації з <span>data.json</span></h2>
+            <p class="json-section-sub">Дані завантажені через Fetch API з локального файлу</p>
+        </div>
+        <div id="loader" class="loader" role="status" aria-label="Завантаження">
+            <div class="spinner" aria-hidden="true"></div>
+            <span>Завантаження даних...</span>
+        </div>
+        <div id="items-grid" class="items-grid"></div>
+    </section>
+
+    <section id="contact-section" class="contact-section" aria-labelledby="contact-title">
+        <div class="contact-inner">
+            <h2 class="contact-title" id="contact-title">Запропонувати локацію</h2>
+            <p class="contact-sub">Знаєте цікаве місце? Розкажіть нам про нього</p>
+            <form id="contact-form" class="contact-form" novalidate>
+                <div class="field">
+                    <label for="contact-name">Ім'я</label>
+                    <input type="text" id="contact-name" name="name" placeholder="Ваше ім'я" required minlength="2" autocomplete="given-name">
+                    <span class="error-message">Введіть ім'я (мінімум 2 символи)</span>
+                </div>
+                <div class="field">
+                    <label for="contact-phone">Телефон</label>
+                    <input type="tel" id="contact-phone" name="phone" placeholder="+380XXXXXXXXX" pattern="^\+380[0-9]{9}$" required autocomplete="tel">
+                    <span class="error-message">Формат: +380XXXXXXXXX</span>
+                </div>
+                <div class="field">
+                    <label for="contact-place">Назва локації</label>
+                    <input type="text" id="contact-place" name="place" placeholder="Наприклад: Кав'ярня Арт" required minlength="2">
+                    <span class="error-message">Введіть назву місця</span>
+                </div>
+                <div class="field">
+                    <label for="contact-message">Опис</label>
+                    <textarea id="contact-message" name="message" rows="3" placeholder="Де знаходиться, чим цікаве..." required minlength="10"></textarea>
+                    <span class="error-message">Опишіть місце (мінімум 10 символів)</span>
+                </div>
+                <button type="submit" class="cta-btn contact-submit">Надіслати ↗</button>
+            </form>
+        </div>
+    </section>
+
+</main>
+
+<footer role="contentinfo">
+    <div class="footer-inner">
+        <p class="footer-logo">FranykLife</p>
+        <p class="footer-copy">© 2026 FranykLife — локації Івано-Франківська</p>
     </div>
-</div>
-
-<section class="json-section">
-    <div class="json-section-header">
-        <h2 class="json-section-title">Локації з <span>data.json</span></h2>
-        <p class="json-section-sub">Дані завантажені через Fetch API з локального файлу</p>
-    </div>
-
-
-    <div id="loader" class="loader">
-        <div class="spinner"></div>
-        <span>Завантаження даних...</span>
-    </div>
-
-
-    <div id="items-grid" class="items-grid"></div>
-</section>
+</footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/static/app.js"></script>

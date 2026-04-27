@@ -647,8 +647,44 @@ window.addEventListener('load', async () => {
     document.getElementById('tab-fav').addEventListener('click', () => switchTab('fav'));
     document.getElementById('tab-add').addEventListener('click', () => switchTab('add'));
 
+    initContactForm();
     await loadData();
     await fetchCategories();
     await fetchPlaces();
     renderList(allPlaces);
 });
+
+function initContactForm() {
+    const form = document.getElementById('contact-form');
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        let valid = true;
+        form.querySelectorAll('input, textarea').forEach(field => {
+            if (!field.checkValidity()) {
+                field.classList.add('touched');
+                valid = false;
+            }
+        });
+
+        if (!valid) return;
+
+        const btn = form.querySelector('.contact-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-inline"></span> Надсилання...';
+
+        setTimeout(() => {
+            form.reset();
+            form.querySelectorAll('input, textarea').forEach(f => f.classList.remove('touched'));
+            btn.disabled = false;
+            btn.textContent = 'Надіслати ↗';
+            showToast('Дякуємо! Ми розглянемо вашу пропозицію 🎉');
+        }, 1200);
+    });
+
+    form.querySelectorAll('input, textarea').forEach(field => {
+        field.addEventListener('blur', () => field.classList.add('touched'));
+    });
+}

@@ -247,18 +247,45 @@ header {
 }
 .btn-accent:hover { background: #d43e22; transform: translateY(-1px); }
 
-.layout {
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}
+
+#main-content {
     display: grid;
     grid-template-columns: 1fr 440px;
-    gap: 0;
-    height: calc(100vh - 68px);
-    overflow: hidden;
+    grid-template-rows: calc(100vh - 68px) auto auto;
+    grid-template-areas:
+        "map sidebar"
+        "locations locations"
+        "contact contact";
 }
 
 .map-section {
+    grid-area: map;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+.sidebar {
+    grid-area: sidebar;
+}
+
+.json-section {
+    grid-area: locations;
+}
+
+.contact-section {
+    grid-area: contact;
 }
 
 .map-toolbar {
@@ -732,30 +759,6 @@ header {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-@media (max-width: 900px) {
-    .layout {
-        grid-template-columns: 1fr;
-        height: auto;
-        overflow: visible;
-    }
-
-    .map-section {
-        height: 400px;
-        position: relative;
-    }
-
-    #map {
-        height: 100%;
-        position: relative;
-    }
-
-    .sidebar {
-        height: 60vh;
-        border-left: none;
-        border-top: 1px solid var(--border);
-    }
-}
-
 .json-section {
     padding: 48px 32px;
     background: var(--paper);
@@ -814,3 +817,178 @@ header {
 }
 
 .error-message p { font-size: 13px; }
+
+.map-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
+    outline: 2px solid var(--accent);
+}
+
+.filter-chip:focus-visible,
+.sidebar-tab:focus-visible,
+.burger-btn:focus-visible,
+.cta-btn:focus-visible,
+.btn:focus-visible,
+.fav-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.field input.touched:invalid ~ .error-message,
+.field textarea.touched:invalid ~ .error-message {
+    display: block;
+}
+
+.field input.touched:valid {
+    border-color: #16a34a;
+}
+
+.error-message {
+    display: none;
+    font-size: 11px;
+    color: #dc2626;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.contact-section {
+    background: var(--ink);
+    padding: 64px 32px;
+}
+
+.contact-inner {
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+.contact-title {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 32px;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.contact-sub {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 32px;
+}
+
+.contact-form .field label {
+    color: rgba(255,255,255,0.5);
+}
+
+.contact-form .field input,
+.contact-form .field textarea {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.1);
+    color: white;
+}
+
+.contact-form .field input::placeholder,
+.contact-form .field textarea::placeholder {
+    color: rgba(255,255,255,0.25);
+}
+
+.contact-form .field input:focus,
+.contact-form .field textarea:focus {
+    border-color: var(--accent);
+    background: rgba(255,255,255,0.1);
+}
+
+.contact-submit {
+    width: 100%;
+    margin-top: 8px;
+    background: var(--accent);
+}
+
+.contact-submit:hover {
+    background: #d43e22;
+}
+
+footer {
+    background: #080807;
+    padding: 24px 32px;
+}
+
+.footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.footer-logo {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 18px;
+    color: white;
+}
+
+.footer-copy {
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+}
+
+@media (max-width: 1024px) {
+    #main-content {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+            "map"
+            "sidebar"
+            "locations"
+            "contact";
+    }
+
+    .map-section {
+        height: 400px;
+    }
+
+    .sidebar {
+        height: 60vh;
+        border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}
+
+@media (max-width: 768px) {
+    .burger-btn { display: flex; }
+    .header-right { display: none; }
+
+    .contact-section { padding: 40px 20px; }
+
+    .contact-title { font-size: 24px; }
+
+    .footer-inner {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .items-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+    .items-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .items-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
